@@ -1,0 +1,274 @@
+{
+	"description": "A WePY project",
+	"setting": {
+		"urlCheck": true,
+		"es6": false,
+		"postcss": false,
+		"minified": false,
+		"newFeature": true
+	},
+	"compileType": "miniprogram",
+	"appid": "wx87bc40b34de1bfa3",
+	"projectname": "houzz",
+	"miniprogramRoot": "dist/",
+	"simulatorType": "wechat",
+	"simulatorPluginLibVersion": {},
+	"condition": {
+		"search": {
+			"current": -1,
+			"list": []
+		},
+		"conversation": {
+			"current": -1,
+			"list": []
+		},
+		"plugin": {
+			"current": -1,
+			"list": []
+		},
+		"game": {
+			"list": []
+		},
+		"miniprogram": {
+			"current": 33,
+			"list": [
+				{
+					"id": -1,
+					"name": "camera",
+					"pathName": "pages/camera",
+					"query": ""
+				},
+				{
+					"id": -1,
+					"name": "DIY",
+					"pathName": "pages/DIY",
+					"query": ""
+				},
+				{
+					"id": -1,
+					"name": "聚购物二级页面",
+					"pathName": "pages/shoppingClass",
+					"query": "",
+					"scene": null
+				},
+				{
+					"id": -1,
+					"name": "我的",
+					"pathName": "pages/mine",
+					"query": "",
+					"scene": null
+				},
+				{
+					"id": -1,
+					"name": "购物车",
+					"pathName": "pages/shoppingCard",
+					"query": "",
+					"scene": null
+				},
+				{
+					"id": 5,
+					"name": "商品详情",
+					"pathName": "pages/goodDetails",
+					"query": "goodsId=31&cover=http://img.zhizubaba.com/GykdtA6cCGHoOhLZ2fRirWPLoZf9CBHwmX5pDaV2.jpeg",
+					"scene": null
+				},
+				{
+					"id": -1,
+					"name": "用户信息修改",
+					"pathName": "pages/userMessageModify",
+					"query": "",
+					"scene": null
+				},
+				{
+					"id": -1,
+					"name": "聚心得列表",
+					"pathName": "pages/experiencelists",
+					"query": "",
+					"scene": null
+				},
+				{
+					"id": -1,
+					"name": "聚心得详情First",
+					"pathName": "pages/experienceDetailsFirst",
+					"query": "",
+					"scene": null
+				},
+				{
+					"id": -1,
+					"name": "聚案例详情",
+					"pathName": "pages/caseDetails",
+					"query": "",
+					"scene": null
+				},
+				{
+					"id": 10,
+					"name": "聚案例二级详情",
+					"pathName": "pages/caseSwiperDetails",
+					"query": "id=6",
+					"scene": null
+				},
+				{
+					"id": -1,
+					"name": "我的-风格订制",
+					"pathName": "pages/mineStyleCustomization",
+					"query": "",
+					"scene": null
+				},
+				{
+					"id": -1,
+					"name": "订单列表",
+					"pathName": "pages/orderLists",
+					"query": "",
+					"scene": null
+				},
+				{
+					"id": 13,
+					"name": "商户展示订单详情",
+					"pathName": "pages/orderDetail",
+					"query": "applyaffiliatedText=&avatar=https://wx.qlogo.cn/mmopen/vi_32/DYAIOgq83eovVtAQbT4tHYVbKz2pdl0ssRHbezkliaNwNPYtwKDWTib2HdEoLh6wc9aEnUVeiaJo4kGCzUJ0bicJtA/132&direction=shopping&isMerchant=1&nickname=牧码先生&orderId=39",
+					"scene": null
+				},
+				{
+					"id": -1,
+					"name": "我喜欢的",
+					"pathName": "pages/myLike",
+					"query": "",
+					"scene": null
+				},
+				{
+					"id": 15,
+					"name": "设计师认证",
+					"pathName": "pages/dataAudit",
+					"query": "avatarUrl=https://wx.qlogo.cn/mmopen/vi_32/Q0j4TwGTfTJIOVH46LNXtLTDURwYKCmIEDMD2dDPhbS3wvICQs2LfODkPoibU0qSy2S1ylSV5PqAku5KWvAATdQ/132",
+					"scene": null
+				},
+				{
+					"id": -1,
+					"name": "评价",
+					"pathName": "pages/evaluate",
+					"query": "",
+					"scene": null
+				},
+				{
+					"id": -1,
+					"name": "申请退款",
+					"pathName": "pages/applyRefund",
+					"query": "",
+					"scene": null
+				},
+				{
+					"id": 18,
+					"name": "商家中心",
+					"pathName": "pages/design",
+					"query": "avatarUrl=https://wx.qlogo.cn/mmopen/vi_32/Q0j4TwGTfTJIOVH46LNXtLTDURwYKCmIEDMD2dDPhbS3wvICQs2LfODkPoibU0qSy2S1ylSV5PqAku5KWvAATdQ/132&nickname=。⁹⁴⁵",
+					"scene": null
+				},
+				{
+					"id": -1,
+					"name": "发布商品",
+					"pathName": "pages/releaseGoods",
+					"query": "avatarUrl=https://wx.qlogo.cn/mmopen/vi_32/Q0j4TwGTfTJIOVH46LNXtLTDURwYKCmIEDMD2dDPhbS3wvICQs2LfODkPoibU0qSy2S1ylSV5PqAku5KWvAATdQ/132",
+					"scene": null
+				},
+				{
+					"id": 20,
+					"name": "聚服务设计师列表",
+					"pathName": "pages/designLists",
+					"query": "label=农装设计",
+					"scene": null
+				},
+				{
+					"id": -1,
+					"name": "我的发布",
+					"pathName": "pages/myRelease",
+					"query": "",
+					"scene": null
+				},
+				{
+					"id": -1,
+					"name": "画布",
+					"pathName": "pages/canvasTouchPen",
+					"query": "",
+					"scene": null
+				},
+				{
+					"id": -1,
+					"name": "产品详情",
+					"pathName": "pages/goodDetails",
+					"query": "goodsId=31",
+					"scene": null
+				},
+				{
+					"id": -1,
+					"name": "服务详情",
+					"pathName": "pages/serviceDetails",
+					"query": "id=6",
+					"scene": null
+				},
+				{
+					"id": -1,
+					"name": "收藏便签",
+					"pathName": "pages/saveIdeaBook",
+					"query": "id=31&cover=http://img.zhizubaba.com/GykdtA6cCGHoOhLZ2fRirWPLoZf9CBHwmX5pDaV2.jpeg",
+					"scene": null
+				},
+				{
+					"id": 26,
+					"name": "用户评价列表",
+					"pathName": "pages/businessReviews",
+					"query": "id=16",
+					"scene": null
+				},
+				{
+					"id": -1,
+					"name": "购买成功",
+					"pathName": "pages/payMentSuccess",
+					"query": "",
+					"scene": null
+				},
+				{
+					"id": -1,
+					"name": "搜索商品",
+					"pathName": "pages/productSearch",
+					"query": "",
+					"scene": null
+				},
+				{
+					"id": 29,
+					"name": "设计师",
+					"pathName": "pages/design",
+					"query": "avatarUrl=https://wx.qlogo.cn/mmopen/vi_32/Q0j4TwGTfTJIOVH46LNXtLTDURwYKCmIEDMD2dDPhbS3wvICQs2LfODkPoibU0qSy2S1ylSV5PqAku5KWvAATdQ/132&nickname=嗯嗯嗯&isMerchant=1",
+					"scene": null
+				},
+				{
+					"id": -1,
+					"name": "用户资料修改",
+					"pathName": "pages/userMessageModify",
+					"query": "",
+					"scene": null
+				},
+				{
+					"id": 31,
+					"name": "商户中心聚购物",
+					"pathName": "pages/merchantGoodsList",
+					"query": "m_id=14",
+					"scene": null
+				},
+				{
+					"id": -1,
+					"name": "商户中心聚案例",
+					"pathName": "pages/merchantCasesList",
+					"query": "m_id=15",
+					"scene": null
+				},
+				{
+					"id": -1,
+					"name": "商户中心聚服务",
+					"pathName": "pages/merchantServicesList",
+					"query": "m_id=15",
+					"scene": null
+				}
+			]
+		}
+	}
+}

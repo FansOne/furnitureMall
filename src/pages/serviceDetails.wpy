@@ -1,0 +1,173 @@
+<script>
+import wepy from 'wepy';
+import api from '../api/api'
+import { request,toast } from '../utils/request'
+import addressChoose from '../compontens/addressChoose'
+
+export default class serviceDetails extends wepy.page {
+    config = {
+        navigationBarTitleText: '服务详情',
+        backgroundColor:'#eeeeee',
+    };
+    components = {
+        addressChoose
+    };
+
+    data = {
+        allData:null,
+        userAddress:null
+    };
+    methods = {
+        // 预约服务
+        serverOrder(id){
+            if(this.userAddress.userName){
+                request(api.work_orders,'POST',{
+                    work_id : id,
+                    username: `${this.userAddress.userName}`,
+                    phone: `${this.userAddress.telNumber}`,
+                    address: `${this.userAddress.provinceName}${this.userAddress.cityName}${this.userAddress.countyName}${this.userAddress.detailInfo}`
+                }).then(res=>{
+                    wx.hideLoading();
+                    if(res.data.status == 200){
+                        // 设计师订单支付
+                        request(`${api.work_orders}/${res.data.message}`).then(res=>{
+                            wx.hideLoading();
+                            wx.requestPayment({
+                                timeStamp: res.data.message.timestamp,
+                                nonceStr: res.data.message.nonceStr,
+                                package: res.data.message.package,
+                                signType: 'MD5',
+                                paySign: res.data.message.paySign,
+                                success:(res)=> {
+                                    wx.redirectTo({
+                                        url: './payMentSuccess'
+                                    })
+                                },
+                                fail(res) { toast('已取消支付') }
+                            })
+                        })
+                    }else{
+                        toast(res.data.message)
+                    }
+                })
+            }else{
+                toast('请选择收货地址')
+            }
+        }
+    };
+
+    events = {};
+    onShow(){
+        this.userAddress = wx.getStorageSync('userAddress');
+    }
+    onLoad(options) {
+        // 获取服务详情数据
+        this.serviceData(options.id)
+    };
+    // 获取服务详情数据
+    serviceData(id){
+        let url = `${api.works}/${id}`;
+        request(url).then(res=>{
+            wx.hideLoading();
+            res.data.message.price = Number(res.data.message.price/100).toFixed(2)
+            this.allData = res.data.message;
+            this.$apply()
+        })
+    }
+}
+</script>
+
+<template lang="wxml">
+    <addressChoose :userAddress.sync='userAddress'/>
+    <view class="designMessBox">
+        <view class="authorName">
+            <image src="{{allData.shopIcon}}" />
+            <view>{{allData.shopTitle}}</view>
+        </view>
+        <view class="goodsMess">
+            <view class="price">￥{{allData.price}}</view>
+            <view class="goodsTitle">{{allData.title}}</view>
+            <view class="goodsClass">{{allData.cateName}}</view>           
+        </view>
+    </view>
+    <view class="serviceTextBox">
+        <view class="serviceTitle">服务详情</view>
+        <view class='serviceText'>{{allData.text}}</view>
+        <image src="{{allData.cover}}" mode='widthFix'/>
+    </view>
+    <view class="bottomBtnBox">
+        <button @tap='serverOrder({{allData.id}})'>预约服务</button>
+    </view>
+</template>
+
+<style lang="less">
+    page{
+        border-top: 1rpx solid rgb(231, 231, 231);
+        background-color: #eee;
+    }
+    .designMessBox{
+        background-color: #fff;
+        width: 100%;
+        padding: 30rpx;
+        .authorName{
+            display: flex;
+            align-items: center;
+            image{
+                width: 80rpx;
+                height: 80rpx;
+                border-radius: 50%;
+            }
+            view{
+                padding-left: 20rpx;
+            }
+        }
+        .goodsMess{
+            padding-top: 35rpx;
+            width: 100%;
+            .price{
+                font-size: 48rpx;
+                color: #6483b1;
+            }
+            .goodsTitle{
+                font-size: 34rpx;
+                padding: 4rpx 0 4rpx 8rpx; 
+            }
+            .goodsClass{
+                width: 100%;
+                color: #888;
+                text-align: right;
+            }
+        }
+    }
+    .serviceTextBox{
+        width: 100%;
+        padding: 0 30rpx 30rpx 30rpx;
+        margin-top: 20rpx;
+        background-color: #fff;
+        .serviceTitle{
+            padding: 30rpx 0 40rpx 0;
+            font-weight: bold;
+        }
+        .serviceText{
+            margin-bottom: 30rpx;
+        }
+        image{
+            width: 100%;
+        }
+    }
+    .bottomBtnBox{
+        width: 100%;
+        padding: 30rpx 88rpx;
+        background-color: #fff;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        box-shadow: 0 -10rpx 10rpx rgb(230, 230, 230);
+        button{
+            font-size: 34rpx;
+            color: #fff;
+            letter-spacing: 5rpx;
+            background-color: #6483b1;
+        }
+    }
+</style>

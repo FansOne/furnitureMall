@@ -1,0 +1,176 @@
+<script>
+import wepy from 'wepy';
+import api from '../api/api'
+import { request,toast } from '../utils/request'
+
+export default class orderLists extends wepy.page {
+    config = {
+        navigationBarTitleText: '我的订单',
+        disableScroll:true
+    };
+    components = {};
+
+    data = {
+        goodsOrderList:[],
+        serverOrderList:[],
+        navbar: ['商品', '服务'],
+        currentTab: 0,
+        scrollHeight:'',
+        isMerchant:""
+    };
+    methods = {
+        // 商品、服务订单跳转详情
+        orderDetail(item,direction,serviceText){
+            wx.navigateTo({
+                url: `./orderDetail?orderId=${item.id}&direction=${direction}&applyaffiliatedText=${serviceText}&avatar=${item.avatar}&nickname=${item.nickname}&isMerchant=${this.isMerchant}`
+            });
+        },
+        navbarTap(status){
+          this.currentTab = status;
+        },
+    };
+
+    events = {};
+    onReady() {
+        wx.getSystemInfo({
+          success:(res)=> {
+              //创建节点选择器
+              let query = wx.createSelectorQuery();
+              query.select('.topListBox').boundingClientRect()
+              query.exec((result) => {
+                  this.scrollHeight = res.windowHeight - result[0].height
+                  this.$apply()
+              })
+          }
+        })
+    };
+    onLoad(options){
+        // 商户获取商品/服务订单数据
+        if(options.isMerchant) this.isMerchant = options.isMerchant
+        this.orderListsData(options.isMerchant)
+    }
+    orderListsData(isMerchant){
+        let goodsOrder = request(api.orders,'GET',{ isMerchant : isMerchant == 1?2:1 });
+        let severOrder = request(api.work_orders,'GET',{ isMerchant : isMerchant == 1?2:1 });
+        Promise.all([goodsOrder,severOrder]).then(res=>{
+            //0未支付 1已支付 2已发货 3已完成 4待退款 5已退款 6已取消
+            wx.hideLoading();
+            if(res[0].data.message != undefined)
+                res[0].data.message.data.forEach(element => {
+                    element.order_details.forEach(ele => {
+                        ele.price = Number(ele.price/100).toFixed(2)
+                    });
+                });
+            if(res[1].data.message != undefined)
+                res[1].data.message.data.forEach(element => {
+                    element.total_price = Number(element.total_price/100).toFixed(2)
+                });
+            this.goodsOrderList = res[0].data.message;
+            this.serverOrderList = res[1].data.message
+            this.$apply()
+        })
+    }
+    // 触底加载
+    paging(){
+      // wx.showLoading({ title: '加载中...' });
+    }
+}
+</script>
+
+<template lang="wxml">
+    <!-- tabMenu -->
+    <view class="topListBox">
+        <view class='orderTabs'>
+            <!--循环-->
+            <view wx:for="{{navbar}}" wx:key="unique" class="item {{currentTab==index ? 'active' : ''}}" @tap="navbarTap({{index}})">
+                {{item}}
+            </view>
+        </view>
+    </view>
+    <!-- 商品 -->
+    <scroll-view hidden="{{currentTab !== 0}}" scroll-y style='height:{{scrollHeight}}px' bindscrolltolower='paging'>
+        <view class="orderListsBox" wx:if='{{goodsOrderList.data.length}}'>
+            <view class="orderLists" wx:for='{{goodsOrderList.data}}' wx:key='' @tap="orderDetail({{item}},'shopping','')">
+                <view class="shopName_status">
+                    <view class="shopName" wx:if="{{isMerchant==''}}">{{item.shopName}}</view>
+                    <view wx:else class="shopUserIcon">
+                        <image src="{{item.avatar}}" />
+                        <view>{{item.nickname}}</view>
+                    </view>
+                     <!-- 0未支付 1已支付 2已发货 3已完成 4待退款 5已退款 6已取消  -->
+                    <view class="shopStatus">{{item.status == 0?'待付款':(item.status == 1?'已支付':(item.status == 2?'已发货':(item.status == 3?'已完成':(item.status == 4?'退款中':(item.status == 5?'已退款':'已取消')))))}}</view>
+                </view>
+                <view class='orderGoodsItem' wx:for='{{item.order_details}}' wx:key='' wx:for-index="idx" wx:for-item="itemName">
+                    <image src='{{itemName.icon}}'/>
+                    <view class="orderGoodsItemRight">
+                        <view class="goodTitle">{{itemName.title}}</view>
+                        <view class="goodPrice_num">
+                            <view class="goodPrice">￥{{itemName.price}}</view>
+                            <view>数量：×{{itemName.num}}</view>
+                        </view>
+                    </view>
+                </view>
+            </view>
+        </view>
+        <view wx:else class="noBQ" style="padding-top:275rpx">
+            <image src="../images/kbq.png" />
+            <view>{{isMerchant==1?'暂无商品销售订单':'你暂时还没有商品购物订单'}}</view>
+        </view>
+    </scroll-view>
+    <!-- 服务 -->
+    <scroll-view hidden="{{currentTab !== 1}}" scroll-y style='height:{{scrollHeight}}px' bindscrolltolower='paging'>
+        <view class="orderListsBox" wx:if='{{serverOrderList.data.length}}'>
+            <view class="orderLists" wx:for='{{serverOrderList.data}}' wx:key='' @tap="orderDetail({{item}},'service',{{item.text}})">
+                <view class="shopName_status">
+                    <view class="shopName">{{item.shopName}}</view>
+                    <!-- 0未支付 1已支付 2已发货 3已完成 4待退款 5已退款 6已取消  -->
+                    <view class="shopStatus">{{item.status == 0?'待付款':(item.status == 1?'已支付':(item.status == 2?'已发货':(item.status == 3?'已完成':(item.status == 4?'退款中':(item.status == 5?'已退款':'已取消')))))}}</view>
+                </view>
+                <view class='orderGoodsItem'>
+                    <image src='{{item.cover}}'/>
+                    <view class="orderGoodsItemRight">
+                        <view class="goodTitle" style="-webkit-line-clamp:1;">{{item.title}}</view>
+                        <view class="affiliated_name">{{item.text}}</view>
+                        <view class="goodPrice_num">
+                            <view class="goodPrice">￥{{item.total_price}}</view>
+                            <view></view>
+                        </view>
+                    </view>
+                </view>
+            </view>
+        </view>
+        <view wx:else class="noBQ" style="padding-top:275rpx">
+            <image src="../images/kbq.png" />
+            <view>{{isMerchant==1?'暂无客户预约服务订单':'你暂时还没有服务预约订单'}}</view>
+        </view>
+    </scroll-view>   
+</template>
+
+<style lang="less">
+    page{
+        border-top: 1rpx solid rgb(231, 231, 231);
+    }
+    .topListBox{
+        padding-left: 30rpx;
+        border-bottom: 1rpx solid rgb(231, 231, 231);
+        .orderTabs{
+            width: 100%;
+            padding-left: 110rpx;
+            padding-right: 110rpx;
+        }
+    }
+    .shopUserIcon{
+        display: flex;
+        align-items: center;
+        image{
+            width: 50rpx;
+            height: 50rpx;
+            border-radius: 50%;
+            margin-right: 12rpx;
+        }
+        view{
+            font-size: 26rpx;
+            font-weight: bold;
+        }
+    }
+</style>

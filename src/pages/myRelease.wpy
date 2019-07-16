@@ -1,0 +1,199 @@
+<script>
+import wepy from 'wepy';
+import api from '../api/api'
+import { request,toast } from '../utils/request'
+
+export default class myRelease extends wepy.page {
+    config = {
+        navigationBarTitleText: '我的发布',
+        disableScroll:true,
+    };
+    components = {};
+
+    data = {
+        navbar: ['在售商品', '已下架商品'],
+        currentTab: 0,
+        scrollHeight:'',
+        scrollTop:-1,
+        orderLists:[],
+    };
+    methods = {
+        navbarTap(status){
+          this.orderLists = []
+          this.currentTab = status;
+          //获取设计师商品列表数据
+          this.goodsList(status+1)
+          if(this.scrollTop === -1){
+              this.scrollTop = 0
+          }else{
+              this.scrollTop = -1
+          }
+        },
+        orderDetail(){},
+        editRelease(item){
+            let releaseGoodsStr = JSON.stringify(item);
+            wx.navigateTo({
+                url: `./releaseGoods?item=${releaseGoodsStr}`
+            })
+        },
+        // 下架服务
+        downGoods(id){
+            request(`${api.works}/${id}`,'PUT',{
+                status: 2,                //商品状态：1-上架；2-下架
+            }).then(res=>{
+                wx.hideLoading();
+                toast('已下架','success')
+                //更新设计师商品列表数据
+                setTimeout(() => {
+                    this.goodsList()
+                }, 600);
+            })
+        },
+        // 删除服务
+        delectGood(id){
+            request(`${api.works}/${id}`,"DELETE").then(res=>{
+                wx.hideLoading();
+                if(res.data.status == 200){
+                    this.goodsList(2)
+                }else{
+                    toast(res.data.message || '请求服务器数据异常')
+                }
+            })
+        }
+    };
+
+    events = {};
+    onReady() {
+        wx.getSystemInfo({
+          success:(res)=> {
+              //创建节点选择器
+              let query = wx.createSelectorQuery();
+              query.select('.topListBox').boundingClientRect()
+              query.exec((result) => {
+                  this.scrollHeight = res.windowHeight - result[0].height
+                  this.$apply()
+              })
+          }
+        })
+    };
+    onLoad() {
+        //获取设计师商品列表数据
+        this.goodsList()
+    };
+    onShow(){
+        this.goodsList()
+    }
+    //获取设计师商品列表数据
+    goodsList(status){
+        let data = {
+            m_id : 0,              // 默认0 0即自己的 其他别的商户
+            status : status || 1   // status 商品状态：1-上架；2-下架
+        };
+        request(api.works,'GET',data).then(res=>{
+            wx.hideLoading();
+            res.data.message.forEach(element => {
+                element.price = Number(element.price/100).toFixed(2)
+            });
+            this.orderLists = res.data.message
+            this.$apply()
+        })
+    }
+    // 下拉刷新
+    paging(){}
+}
+</script>
+
+<template lang="wxml">
+    <!-- tabMenu -->
+    <view class="topListBox">
+        <view class='orderTabs'>
+            <!--循环-->
+            <view wx:for="{{navbar}}" wx:key="unique" class="item {{currentTab==index ? 'active' : ''}}" @tap="navbarTap({{index}})">
+                {{item}}
+            </view>
+        </view>
+    </view>
+    <scroll-view scroll-y style='height:{{scrollHeight}}px' bindscrolltolower='paging' scroll-top='{{scrollTop}}' scroll-with-animation>
+        <!-- 在售商品 -->
+        <view hidden="{{currentTab !== 0}}" class="orderListsBox">
+            <view class="orderLists" wx:for='{{orderLists}}' wx:key='' @tap='orderDetail'>
+                <view class='orderGoodsItem'>
+                    <image src='{{item.cover}}'/>
+                    <view class="orderGoodsItemRight">
+                        <view class="goodTitle" style="-webkit-line-clamp:1;">{{item.title}}</view>
+                        <view class="affiliated_name">{{item.text}}</view>
+                        <view class="goodPrice_num">
+                            <view class="goodPrice">￥{{item.price}}</view>
+                            <view></view>
+                        </view>
+                    </view>
+                </view>
+                <view class="operationBtn">
+                    <button @tap='downGoods({{item.id}})'>下架</button>
+                    <button @tap.stop="editRelease({{item}})">编辑</button>
+                </view>
+            </view>
+            <view class="noBQ" wx:if='{{!orderLists.length}}' style="padding-top:250rpx;">
+                <image src="../images/kbq.png" />
+                <view>您目前无在售商品</view>
+            </view>
+        </view>
+        <!-- 已下架商品 -->
+        <view hidden="{{currentTab !== 1}}" class="orderListsBox">
+            <view class="orderLists" wx:for='{{orderLists}}' wx:key='' @tap='orderDetail'>
+                <view class='orderGoodsItem'>
+                    <image src='{{item.cover}}'/>
+                    <view class="orderGoodsItemRight">
+                        <view class="goodTitle" style="-webkit-line-clamp:1;">{{item.title}}</view>
+                        <view class="affiliated_name">{{item.text}}</view>
+                        <view class="goodPrice_num">
+                            <view class="goodPrice">￥{{item.price}}</view>
+                            <view></view>
+                        </view>
+                    </view>
+                </view>
+                <view class="operationBtn">
+                    <button @tap='delectGood({{item.id}})'>彻底删除</button>
+                </view>
+            </view>
+            <view class="noBQ" wx:if='{{!orderLists.length}}' style="padding-top:250rpx;">
+                <image src="../images/kbq.png" />
+                <view>您目前无已下架商品</view>
+            </view>
+        </view>
+    </scroll-view>
+</template>
+
+<style lang="less">
+    .topListBox{
+        padding-left: 30rpx;
+        border-bottom: 1rpx solid rgb(231, 231, 231);
+        .orderTabs{
+            width: 100%;
+            padding-left: 110rpx;
+            padding-right: 110rpx;
+        }
+    }
+    .orderListsBox{
+        .orderGoodsItem{
+            border-bottom: 1rpx solid #eee;
+        }
+        .operationBtn{
+            width: 100%;
+            display: flex;
+            justify-content: flex-end;
+            padding: 30rpx 0;
+            button{
+                width: 160rpx;
+                height: 60rpx;
+                font-size: 30rpx;
+                border:1rpx solid #eee;
+                background-color: #fff;
+                line-height: 60rpx;
+            }
+            button:last-of-type{
+                margin-left: 30rpx;
+            }
+        }
+    }
+</style>

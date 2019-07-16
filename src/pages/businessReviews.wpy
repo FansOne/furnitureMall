@@ -1,0 +1,62 @@
+<script>
+import wepy from 'wepy';
+import requestUrl from '../api/api'
+import { request,toast } from '../utils/request'
+import businessReviewsC from '../compontens/businessReviews'
+
+export default class businessReviews extends wepy.page {
+    config = {
+        navigationBarTitleText: '评价',
+    };
+    components = {
+        businessReviewsC,
+    };
+
+    data = {
+        stars: [0, 1, 2, 3, 4],
+        userCommentData:[],
+        page:1,
+        articleId:'',
+    };
+    methods = {};
+
+    events = {};
+    onLoad(options) {
+        this.articleId = options.id
+        this.forumReview(options.id)
+    };
+    // onReachBottom(){
+    //     this.page++
+    //     this.forumReview(this.articleId)
+    // }
+    // 评论列表数据
+    forumReview(articleId){
+        request(requestUrl.forumReview,'GET',{ forums_id : articleId }).then(res=>{
+            wx.hideLoading();
+            let dataLength = res.data.message.data.length;
+            if(this.page == 1){
+                this.userCommentData = res.data.message.data
+                this.$apply()
+            }else if(this.page != 1 && dataLength){
+                res.data.message.data.forEach(element => {
+                    this.userCommentData.push(element)
+                });
+            }else{
+                toast('已加载全部数据')
+                this.page = 1
+                this.$apply()
+            }
+        })
+    }
+}
+</script>
+
+<template lang="wxml">
+    <view class='container'>
+        <!-- 评论展示组件 -->
+        <businessReviewsC :syncTitle.sync="userCommentData" :syncStar.sync="stars"/> <!--:syncStar.sync="stars"-->
+    </view>
+</template>
+
+<style lang="less">
+</style>

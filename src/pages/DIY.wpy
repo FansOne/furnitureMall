@@ -1,0 +1,155 @@
+<script>
+let arr = [];
+let pics = [];
+import wepy from 'wepy';
+import api from '../api/api'
+import { request,toast } from '../utils/request'
+
+export default class DIY extends wepy.page {
+    config = {
+        navigationBarTitleText: 'DIY',
+        disableScroll:true
+    };
+    components = {};
+
+    data = {
+        templatesImg:[
+            'https://timgsa.baidu.com/timg?image&quality=80&size=b9999_10000&sec=1550583550&di=dcc77a6fa045460ca0b963987b91651f&imgtype=jpg&er=1&src=http%3A%2F%2Fpic2.ooopic.com%2F12%2F59%2F52%2F51bOOOPICb1_1024.jpg',
+            'https://timgsa.baidu.com/timg?image&quality=80&size=b9999_10000&sec=1549988936058&di=26d4346364b271c1ed998e1d49926776&imgtype=0&src=http%3A%2F%2Fpic.58pic.com%2F58pic%2F11%2F76%2F43%2F45R58PIC9vX.jpg',
+            'https://timgsa.baidu.com/timg?image&quality=80&size=b9999_10000&sec=1549989016161&di=73d0fb91f11d28c3e8b86246783b34af&imgtype=0&src=http%3A%2F%2Fpic.58pic.com%2F58pic%2F13%2F78%2F01%2F73c58PICYGC_1024.jpg',
+            'https://timgsa.baidu.com/timg?image&quality=80&size=b9999_10000&sec=1549989116824&di=2a1a3837a0cb79e9f4c502afa55a0b66&imgtype=0&src=http%3A%2F%2Fpic.58pic.com%2F58pic%2F13%2F65%2F97%2F25h58PICbBs_1024.jpg'
+        ],
+        canvas_:[
+            'https://ss1.bdstatic.com/70cFvXSh_Q1YnxGkpoWK1HF6hhy/it/u=2365710975,1693466890&fm=26&gp=0.jpg',
+            'https://timgsa.baidu.com/timg?image&quality=80&size=b9999_10000&sec=1549990482477&di=ac4c24e219e4fe0234307fb4a049edf6&imgtype=0&src=http%3A%2F%2Fpic.shejiben.com%2Fcaizhi%2Fday_151020%2F20151020_28df2c65c0f78176e1b1T660z7i0Kj90.jpg',
+            'https://timgsa.baidu.com/timg?image&quality=80&size=b9999_10000&sec=1549990482475&di=dc1b28526bf9b689f6b56d07806fcd91&imgtype=0&src=http%3A%2F%2Fwww.jituwang.com%2Fuploads%2Fallimg%2F151016%2F258165-1510160Q11125.jpg',
+            'https://timgsa.baidu.com/timg?image&quality=80&size=b9999_10000&sec=1549990482475&di=befd4ee2312419b111c3828f0ca6a9de&imgtype=0&src=http%3A%2F%2Fimg009.hc360.cn%2Fy5%2FM04%2FDA%2F42%2FwKhQUVXPGJOEUJoqAAAAABoy87k900.jpg'
+        ],
+        scrollHeight:0,
+        bindscroll:false
+    };
+    methods = {
+        bindscrolltolower(){
+            console.log('---页面上滑---')
+            this.bindscroll = true
+        },
+        bindscrolltoupper(){
+            console.log('---页面下滑---')
+            this.bindscroll = false
+        },
+        cavasTouchPen(canvasImg){
+            wx.navigateTo({
+                url: `./canvasTouchPen?canvasImg=${canvasImg}`
+            });
+        },
+        // 相册选择图片
+        chooseImage(){
+            wx.chooseImage({
+                count: 1,
+                sizeType: ['original', 'compressed'],
+                sourceType: ['album', 'camera'],
+                success: (res)=> {
+                    wx.navigateTo({
+                        url: `./canvasTouchPen?canvasImg=${res.tempFilePaths}`
+                    });
+                }
+            })
+        }
+    };
+
+    events = {};
+    onLoad() {
+        let query = wx.createSelectorQuery();
+        query.select('.topChooseBox').boundingClientRect()
+        query.exec((result) => {
+            // console.log(result)
+            this.scrollHeight = wepy.$instance.globalData.windowHeight - result[0].height
+            this.$apply()
+        })
+        // 获取div数据
+        request(api.diys,"GET",{ type:1 }).then(res=>{
+            wx.hideLoading();
+        })
+    };
+}
+</script>
+
+<template lang="wxml">
+    <view class="topChooseBox {{bindscroll?'bindscroll':''}}">
+        <button class="cameraLeft">
+            <image src="../images/photo_icon@2x.png"/>
+            <view>相机拍照</view>
+        </button>
+        <button class="photosRight" @tap="chooseImage">
+            <image src="../images/xc_icon_@2x.png"/>
+            <view>从相册中选择</view>
+        </button>
+    </view>
+    <!-- 分类 -->
+    <scroll-view scroll-y style="height:{{scrollHeight}}px" lower-threshold='{{scrollHeight/2}}' @scrolltoupper = 'bindscrolltoupper' @scrolltolower = 'bindscrolltolower'>
+        <view class="titleClass">模板</view>
+        <view class="templatesBox">
+            <block wx:for='{{templatesImg}}' wx:key=''>
+                <image src="{{item}}" @tap='cavasTouchPen({{item}})'/>
+            </block>
+        </view>
+        <!-- ======== -->
+        <view class="titleClass" style="padding:15rpx 30rpx 25rpx 30rpx">画布</view>
+        <view class="templatesBox">
+            <block wx:for='{{canvas_}}' wx:key=''>
+                <image src="{{item}}" @tap='cavasTouchPen({{item}})'/>
+            </block>
+        </view>
+    </scroll-view>
+</template>
+
+<style lang="less">
+    page{
+        border-top: 1rpx solid #f5f3f3;
+    }
+    .topChooseBox{
+        width: 100%;
+        padding: 40rpx 77rpx;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: 0rpx 10rpx 8rpx #eeeded;
+        transition: padding .8s;
+        .cameraLeft,.photosRight{
+            padding: 0rpx;
+            margin: 0rpx;
+            background-color: #fff;
+            line-height: normal;
+            image{
+                width: 50rpx;
+                height: 44rpx;
+            }
+            view{
+                margin-top: 14rpx;
+                color: #231815;
+            }
+        }
+    }
+    .bindscroll{
+        transition: padding .8s;
+        padding: 15rpx 77rpx;
+    }
+    .titleClass{
+        width: 100%;
+        padding: 33rpx 25rpx 25rpx 25rpx;
+        color: #888888;
+    }
+    .templatesBox{
+        width: 100%;
+        padding: 0rpx 10rpx;
+        display: flex;
+        // flex-wrap: wrap;
+        flex-flow:wrap;
+        justify-content: space-between;
+        image{
+            width: 49.4%;
+            margin-bottom: 10rpx;
+            height: 360rpx;
+        }
+    }
+</style>

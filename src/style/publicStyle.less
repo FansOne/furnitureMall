@@ -1,0 +1,945 @@
+  .shadowLine{
+      width: 100%;
+      height: 20rpx;
+      background-color: #eee;
+  }
+  // 顶部搜索
+  .searchBox{
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0 30rpx;
+    display: flex;
+    height: 60rpx;
+    .search_btn{
+      position: relative;
+      width: 60rpx;
+      height: 60rpx;
+      .userLog{
+        width: 60rpx;
+        height: 60rpx;
+        border-radius: 50%;
+        display:flex;
+        overflow: hidden;
+      }
+      view{
+        width: 24rpx;
+        height: 24rpx;
+        background-color: #6483b1;
+        position: absolute;
+        border-radius: 50%;
+        top: 0rpx;
+        right: -10rpx;
+      }
+      button{
+        position: absolute;
+        left: 0;
+        top: 0;
+        background-color: rgba(0, 0, 0, 0);
+        border-radius: 0;
+        width: 60rpx;
+        height: 60rpx;
+      }
+    }
+    .inputBox{
+      flex: 1;
+      margin: 0 20rpx;
+      box-sizing: border-box;
+      padding: 0 15rpx;
+      display: flex;
+      background-color: #eeeeee;
+      height: 60rpx;
+      border-radius: 50rpx;
+      display: flex;
+      align-items: center;
+      image{
+        width: 40rpx;
+        height: 37rpx;
+        margin: 15rpx;
+      }
+      input{
+        flex: 1;
+        height: 60rpx;
+        line-height: 60rpx;
+      }
+    }
+    .cardBox{
+      display: flex;
+      align-items: center;
+      position: relative;
+      width: 60rpx;
+      height: 60rpx;
+      image{
+        width: 50rpx;
+        height: 44rpx;
+      }
+      view{
+        position: absolute;
+        top: 0rpx;
+        right: -4rpx;
+        width: 30rpx;
+        height: 30rpx;
+        border-radius: 50%;
+        background-color: #6483b1;
+        color: #fff;
+        line-height: 30rpx;
+        text-align: center;
+        font-size: 21rpx;
+      }
+    }
+  }
+ /*顶部导航样式*/
+ .topListBox{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-right: 30rpx;
+    .orderTabs{
+        width: 40%;
+        box-shadow:none;
+        .item.active:after{ 
+            height: 6rpx;
+        }
+    }
+    .noticeBox{
+        display: flex;
+        align-items: center;
+        image{
+            width: 44rpx;
+            height: 40rpx;
+        }
+        image:nth-child(1){
+            margin-right: 43rpx;
+        }
+    }
+}
+.orderTabs{
+    height: 88rpx;
+    width: 100%;
+    box-sizing: border-box;
+    background-color: #fff;
+    box-shadow: 0 8rpx 10rpx #f1f1f1; 
+    display: flex;
+    justify-content: space-between; 
+    box-sizing: border-box;
+    padding: 25rpx 30rpx 0rpx 30rpx;
+} 
+.orderTabs .item{
+    position: relative; 
+    text-align: center;
+    line-height: 40rpx; 
+    font-size: 32rpx;
+    color: #141414;
+    font-family: Microsoft YaHei;
+} 
+.orderTabs .item.active{ 
+    color: #6483b1; 
+    font-size: 32rpx;
+    font-family: Microsoft YaHei;
+} 
+.orderTabs .item.active:after{ 
+    content: ""; 
+    position: absolute;
+    bottom: 0rpx; 
+    left: 0; 
+    right: 0;
+    margin: auto; 
+    height: 10rpx;
+    width: 60rpx;
+    border-radius: 50rpx;
+    background-color: #6483b1;
+}
+  // 商品item
+.classificationTitle{
+    width: 100%;
+    padding: 0 26rpx;
+    height: 76rpx;
+    line-height: 76rpx;
+    font-size: 32rpx;
+}
+.goodsCategoryBox{
+    width: 100%;
+    padding: 0 20rpx 0 26rpx;
+    display: flex;
+    flex-wrap: wrap;
+    .goodsCategoryItem{
+        position: relative;
+        width: 32%;
+        height: 260rpx;
+        background-color:#f6f6f6;
+        padding-top: 20rpx;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 12rpx;
+        margin-right: 6rpx;
+        image{
+            width: 160rpx;
+            height: 160rpx;
+        }
+        view{
+            line-height: 71rpx;
+            display: flex;
+            align-items: center;
+            flex-direction: column;
+            view{
+                line-height: normal;
+            }
+        }
+        .price{
+            display: flex;
+            align-items: center;
+            flex-direction: row;
+            view{
+                color: #6080b5;
+                padding-right: 8rpx;
+            }
+            image{
+                width: 30rpx;
+                height: 33rpx;
+            }
+        }
+        .hostSellIcon{
+            width: 70rpx;
+            height: 70rpx;
+            position: absolute;
+            left: 20rpx;
+            top: -8rpx;
+            z-index: 1;
+        }
+        .activePriceBox{
+            flex: 1;
+            width: 100%;
+            padding-top: 18rpx;
+            .title{
+                font-size: 29rpx;
+            }
+            .sell{
+                font-size: 28rpx;
+                color: #6483b1;
+            }
+        }
+    }
+    .activeBox{
+        width:49%;
+        padding: 0 30rpx 0 30rpx;
+        height:345rpx;
+        image{
+            width:100%;
+            height:249rpx
+        }
+    }
+    .recommend{
+        height: 452rpx;
+        .activePriceBox{
+            align-items: left;
+            .brand{
+                font-size: 26rpx;
+                color: #666;
+            }
+            .title{
+                overflow: hidden;
+                text-overflow: ellipsis;
+                display: -webkit-box;
+                -webkit-line-clamp: 2;
+                -webkit-box-orient: vertical;
+            }
+            .sell{
+                display: flex;
+                flex-direction: row;
+                text{
+                    font-size: 28rpx;
+                }
+                .throughLine{
+                    color: #666;
+                    text-decoration:line-through;
+                    padding-left: 27rpx;
+                }
+            }
+        }
+    }
+}
+.star-wrap{
+    display: flex;
+    width:100%;
+    height:26rpx;
+    align-items: flex-start !important;
+    flex-direction: row !important;
+    .star{
+        vertical-align:top;
+        display:inline-block;
+        width:165rpx;
+        height:24rpx;
+        position:relative;
+        .star-image{
+            position: absolute;
+            top: 0rpx;
+            width: 28rpx;
+            height: 28rpx;
+        }
+    }
+}
+.masks{
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 100%;
+    z-index: 10;
+    background-color: rgba(0, 0, 0, .6);
+}
+.inputItemBox{
+    width: 100%;
+    padding: 0 8rpx;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 90rpx;
+    border-bottom: 1rpx solid rgb(240, 240, 240);
+    view:first-of-type{
+        font-size: 28rpx;
+        font-weight: bold;
+    }
+    .editTextarea{
+        color: #999;
+        padding-left: 35rpx;
+    }
+    input{
+        flex: 1;
+        padding-left: 15rpx;
+        text-align: right;
+        font-size: 28rpx;
+        overflow:hidden;
+        text-overflow:ellipsis;
+        white-space:nowrap
+    }
+    image{
+        width: 50rpx;
+        height: 50rpx;
+        border-radius: 50%;
+    }
+    .selectMess{
+        display: flex;
+        align-items: center;
+        picker view{
+            font-size: 28rpx;
+            color: #999;
+        }
+        image{
+            width: 19rpx;
+            height: 28rpx;
+            margin-left: 10rpx;
+        }
+    }
+    .chargingStandardBox{
+        display: flex;
+        align-items: center;
+        input{
+            width: 100rpx;
+            height: 35rpx;
+            line-height: 35rpx;
+            border: 1rpx solid rgb(211, 211, 211);
+            border-radius: 10rpx;
+            text-align: left;
+            padding: 0 10rpx;
+        }
+        view{
+            color: #999;
+            font-size: 35rpx;
+            padding: 0 7rpx;
+        }
+    }
+    .phoneVerification{
+        display: flex;
+        align-items: center;
+        flex: 1;
+        padding-left: 70rpx;
+        input{
+            border: 1rpx solid rgb(211, 211, 211);
+            text-align: left;
+        }
+        view{
+            width: 160rpx;
+            height: 60rpx;
+            text-align: center;
+            line-height: 60rpx;
+            font-weight: normal;
+            background-color: #6483b1;
+            color: #fff;
+            border-radius: 10rpx;
+            margin-left: 45rpx;
+        }
+    }
+}
+.submitBtn{
+    width: 100%;
+    background-color: #fff;
+    padding-bottom: 40rpx;
+    position: fixed;
+    left: 0;
+    bottom: 0;
+    display: flex;
+    justify-content: center;
+    button{
+        background-color: #6483b1;
+        color: #fff;
+        font-size: 36rpx;
+        letter-spacing: 5rpx;
+        width: 600rpx;
+        height: 80rpx;
+        line-height: 80rpx;
+    }
+}
+// 设计师名片
+.designListBox{
+    width: 100%;
+    padding: 10rpx 30rpx 0 30rpx;
+    .label{
+        color: #666;
+        margin-bottom: 25rpx;
+    }
+    .designListItem{
+        margin-bottom: 24rpx;
+        position: relative;
+        height: 492rpx;
+        width: 100%;
+        border-radius: 10rpx;
+        box-shadow: 0 0 10rpx rgb(179, 179, 179);
+        .shoppingCover{
+            width: 100%;
+            height: 280rpx;
+            border-radius: 10rpx 10rpx 0 0;
+        }
+        .shoppingCoverMask{
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 280rpx;
+            border-radius: 10rpx 10rpx 0 0;
+            z-index: 10;
+            background-color: rgba(12, 6, 6, .35);
+            display: flex;
+            align-items: flex-end;
+            padding: 20rpx;
+            .userCover{
+                width: 120rpx;
+                height: 120rpx;
+                border-radius: 50%;
+            }
+            .coverMaskRight{
+                flex: 1;
+                padding-left: 30rpx;
+                padding-bottom: 16rpx;
+                padding-top: 6rpx;
+                height: 120rpx;
+                display: flex;
+                flex-direction: column;
+                justify-content: space-around;
+                view:first-of-type{
+                    color: #fff;
+                    font-size: 34rpx;
+                }
+            }
+        }
+        .addressBox{
+            width: 100%;
+            padding: 0 30rpx;
+            height: 100rpx;
+            line-height: 100rpx;
+            color: #000;
+            font-size: 28rpx;
+            display: flex;
+            align-items: center;
+            image{
+                width: 35rpx;
+                height: 32rpx;
+                margin-right: 15rpx;
+            }
+            view{
+                flex: 1;
+                overflow:hidden;
+                text-overflow:ellipsis;
+                white-space:nowrap;
+            }
+        }
+        .btnBox{
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            width: 100%;
+            padding: 0 25rpx;
+            button{
+                width: 45%;
+                height: 80rpx;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                image{
+                    width: 42rpx;
+                    height: 42rpx;
+                    margin-right: 12rpx;
+                }
+                view{
+                    font-size: 32rpx;
+                    height: 80rpx;
+                    line-height: 80rpx;
+                }
+            }
+            button:first-of-type{
+                border: 1rpx solid #6483b1;
+                background-color: #fff;
+                view{
+                    color: #6483b1;
+                }
+            }
+            button:last-of-type{
+                background-color: #6483b1;
+                view{
+                    color: #fff;
+                }
+            }
+        }
+    }
+}
+// 图片flex-wrap
+.screenImgBox{
+    width: 100%;
+    padding: 0 6rpx 12rpx 6rpx;
+    display: flex;
+    flex-direction:row;
+    flex-wrap: wrap;
+    justify-content:space-between;
+    image{
+        width: 49.6%;
+        height: 366rpx;
+        margin-bottom: 6rpx;
+    }
+}
+// 订单列表
+.orderListsBox{
+    width: 100%;
+    padding: 35rpx 15rpx 0rpx 15rpx;
+    .orderLists{
+        width: 100%;
+        padding: 15rpx 10rpx 0 10rpx;
+        border-radius: 15rpx;
+        box-shadow: 0 0 13rpx rgb(224, 223, 223);
+        margin-bottom: 35rpx;
+        .shopName_status{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0rpx 30rpx 15rpx 30rpx;
+            border-bottom: 1rpx solid #f0ecec;
+            .shopName{
+                font-size: 26rpx;
+                color: #231815;
+            }
+            .shopStatus{
+                font-size: 30rpx;
+                color: #6483b1;
+            }
+        }
+        .orderGoodsItem{
+            display: flex;
+            align-items: center;
+            padding-top: 15rpx;
+            padding-bottom: 15rpx;
+            border-bottom: 1rpx solid #eeeaea;
+            image{
+                width: 200rpx;
+                height: 200rpx;
+                border-radius: 10rpx;
+            }
+            .orderGoodsItemRight{
+                flex: 1;
+                padding-left: 15rpx;
+                height: 200rpx;
+                padding-top: 10rpx;
+                padding-bottom: 18rpx;
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+                .goodTitle{
+                    color: #231815;
+                    font-size: 26rpx;
+                    display: -webkit-box;
+                    -webkit-box-orient: vertical;
+                    -webkit-line-clamp: 2;
+                    overflow: hidden;
+                }
+                .affiliated_name{
+                    color: #666;
+                    font-size: 22rpx;
+                    display: -webkit-box;
+                    -webkit-box-orient: vertical;
+                    -webkit-line-clamp: 2;
+                    overflow: hidden; 
+                }
+                .goodPrice_num{
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    .goodPrice{
+                        color: #6483b1;
+                        font-size: 30rpx;
+                    }
+                    view:last-of-type{
+                        font-size: 26rpx;
+                        color: #cbcbcb;
+                    }
+                }
+            }
+        }
+    }
+}
+// 发需求、便签标题弹窗
+.demandBox{
+    z-index: 20;
+    width: 100%;
+    height: 620rpx;
+    padding: 20rpx 40rpx 40rpx 40rpx;
+    background-color: #fff;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    margin: auto;
+    left: -100%;
+    transition: left .3s;
+    .demandTitleBox{
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        image{
+            width: 30rpx;
+            height: 30rpx;
+        }
+    }
+    .inputBox{
+        width: 100%;
+        height: 80rpx;
+        border-radius: 10rpx;
+        border: 1rpx solid rgb(224, 224, 224);
+        margin: 30rpx 0;
+        display: flex;
+        align-items: center;
+        padding: 0 25rpx 0 15rpx;
+        view{
+            color: red;
+            font-size: 33rpx;
+            margin-right: 8rpx;
+        }
+        image{
+            width: 32rpx;
+            height: 40rpx;
+        }
+        input{
+            flex: 1;
+        }
+    }
+    textarea{
+        width: 100%;
+        height: 177rpx;
+        border: 1rpx solid rgb(224, 224, 224);
+        border-radius: 10rpx;
+        box-sizing: border-box;
+        padding: 15rpx;
+    }
+    button{
+        margin-top: 25rpx;
+        width: 100%;
+        height: 80rpx;
+        background-color: #6483b1;
+        color: #fff;
+        font-size: 34rpx;
+    }
+}
+// 无数据状态
+.noBQ{
+    width: 100%;
+    padding-top: 77rpx;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    image{
+        width: 165rpx;
+        height: 165rpx;
+    }
+    view{
+        font-size: 25rpx;
+        padding-top: 25rpx;
+        color: #b3b2b2;
+    }
+}
+// 数据请求成功前遮罩
+.requestDataBefore{
+    position: absolute;
+    left: 0;
+    top:0;
+    width: 100%;
+    height: 100%;
+    background-color: #fff;
+    z-index: 9999;
+}
+// 设计师聚服务
+.releaseSeverceBox{
+    width: 100%;
+    padding: 0 30rpx;
+    padding-bottom: 15rpx;
+    display: flex;
+    align-items: center;
+    image{
+        width: 40%;
+        height: 180rpx;
+    }
+    .releaseSeverceR{
+        height: 180rpx;
+        padding-left: 20rpx;
+        width: 60%;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-around;
+        .releaseSeverceTitle{
+            width: 100%;
+            font-size: 28rpx;
+            font-weight: bold;
+            overflow: hidden;
+            text-overflow:ellipsis;
+            white-space: nowrap;
+        }
+        .affiliated_name{
+            width: 100%;
+            font-size: 28rpx;
+            font-weight: bold;
+            color: #999;
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+            overflow: hidden;
+        }
+        .severcePrice{
+            display: flex;
+            width: 100%;
+            justify-content: space-between;
+            align-items: center;
+            view:first-of-type{
+                color: #6483b1;
+                font-weight: bold;
+            }
+            view:last-of-type{
+                font-size: 28rpx;
+                font-weight: bold;
+            }
+        }
+    }
+}
+// 案例列表
+.caseBox{
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    padding: 20rpx 12rpx;
+    .caseItemBox{
+        width: 49%;
+        height: 412rpx;
+        background-color: #ffffff;
+        border-radius: 15rpx;
+        box-shadow: 0 0 15rpx rgb(209, 209, 209);
+        margin-bottom: 15rpx;
+        image{
+            width: 100%;
+            height: 312rpx;
+            border-radius: 15rpx 15rpx 0 0;
+            position: relative;
+            view{
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                width: 100%;
+                color: #fff;
+                padding-left: 20rpx;
+                padding-bottom: 10rpx;
+            }
+        }
+        .caseGoodTitle{ 
+            height: 100rpx;
+            width: 389rpx;
+            padding: 0 25rpx;
+            display: -webkit-box;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            word-break: break-all;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp:2;
+        }
+    }
+}
+// 设计师列表
+.designListBox{
+    width: 100%;
+    padding: 10rpx 30rpx 0 30rpx;
+    .label{
+        color: #666;
+        margin-bottom: 25rpx;
+    }
+    .designListItem{
+        margin-bottom: 24rpx;
+        position: relative;
+        height: 492rpx;
+        width: 100%;
+        border-radius: 10rpx;
+        box-shadow: 0 0 10rpx rgb(179, 179, 179);
+        .shoppingCover{
+            width: 100%;
+            height: 280rpx;
+            border-radius: 10rpx 10rpx 0 0;
+        }
+        .shoppingCoverMask{
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 280rpx;
+            border-radius: 10rpx 10rpx 0 0;
+            z-index: 10;
+            background-color: rgba(12, 6, 6, .35);
+            display: flex;
+            align-items: flex-end;
+            padding: 20rpx;
+            .userCover{
+                width: 120rpx;
+                height: 120rpx;
+                border-radius: 50%;
+            }
+            .coverMaskRight{
+                flex: 1;
+                padding-left: 30rpx;
+                padding-bottom: 16rpx;
+                padding-top: 6rpx;
+                height: 120rpx;
+                display: flex;
+                flex-direction: column;
+                justify-content: space-around;
+                view:first-of-type{
+                    color: #fff;
+                    font-size: 34rpx;
+                }
+            }
+        }
+        .addressBox{
+            width: 100%;
+            padding: 0 30rpx;
+            height: 100rpx;
+            line-height: 100rpx;
+            color: #000;
+            font-size: 28rpx;
+            display: flex;
+            align-items: center;
+            image{
+                width: 35rpx;
+                height: 32rpx;
+                margin-right: 15rpx;
+            }
+            view{
+                flex: 1;
+                overflow:hidden;
+                text-overflow:ellipsis;
+                white-space:nowrap;
+            }
+        }
+        .btnBox{
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            width: 100%;
+            padding: 0 25rpx;
+            button{
+                width: 45%;
+                height: 80rpx;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                image{
+                    width: 42rpx;
+                    height: 42rpx;
+                    margin-right: 12rpx;
+                }
+                view{
+                    font-size: 32rpx;
+                    height: 80rpx;
+                    line-height: 80rpx;
+                }
+            }
+            button:first-of-type{
+                border: 1rpx solid #6483b1;
+                background-color: #fff;
+                view{
+                    color: #6483b1;
+                }
+            }
+            button:last-of-type{
+                background-color: #6483b1;
+                view{
+                    color: #fff;
+                }
+            }
+        }
+    }
+}
+// 聚心得列表
+.experienceListBox{
+    width: 100%;
+    padding: 0 10rpx 10rpx 10rpx;
+    .experienceListFor{
+        border-radius: 20rpx;
+        box-shadow: 0 0 10rpx #dfdcdc;
+        overflow: hidden;
+        margin-bottom: 20rpx;
+        .experienceCover{
+            width: 100%;
+            height: 300rpx;
+        }
+        .experienceIntroduce{
+            width: 100%;
+            padding: 15rpx 18rpx;
+            .experienceTitle{
+                font-size: 33rpx;
+                color: #000;
+                display: -webkit-box;
+                -webkit-box-orient: vertical;
+                -webkit-line-clamp: 2;
+                overflow: hidden;
+            }
+            .experienceUserOperation{
+                padding-top: 15rpx;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                image{
+                    width: 50rpx;
+                    height: 50rpx;
+                    border-radius: 50%;
+                }
+                .experienceCommentNumBox{
+                    display: flex;
+                    align-items: center;
+                    view{
+                        color: #999999;
+                    }
+                    view:last-of-type{
+                        padding-left: 45rpx;
+                    }
+                }
+            }
+        }
+    }
+    
+}
+// 服务列表
+.releaseSeverceBox{
+    background-color: #fafafa !important;
+    margin-bottom: 20rpx;
+    padding-bottom: 0rpx !important;
+}

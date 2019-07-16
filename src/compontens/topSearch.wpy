@@ -1,0 +1,64 @@
+<template lang="wxml">
+    <view class="container">
+    <!-- search -->
+    <view class="searchBox {{hiddenSearch?'cardBoxFloat':''}}">
+      <!-- 搜索框 -->
+      <view class='inputBox' wx:if='{{!hiddenSearch}}' @tap="serviceSearch">
+        <image src='../images/home_search_icon.png'/>
+        <input placeholder='请输入名称' placeholder-style='color:#b6b6b6;font-size:30rpx;' type='text' confirm-type='search' disabled/>
+      </view>
+      <!-- 购物车 -->
+      <view class="cardBox" @tap='goShoppingCard'>
+        <image src='../images/home_cart_icon.png'/>
+        <view>{{cartNums}}</view>
+      </view>
+    </view>
+  </view>
+</template>
+
+<script>
+import wepy from 'wepy';
+export default class topSearch extends wepy.component {
+    components = {};
+
+    data = {};
+    methods = {
+      goShoppingCard(){
+        wx.navigateTo({
+          url: './shoppingCard'
+        })
+      },
+      // 搜索
+      serviceSearch(){
+          wx.navigateTo({
+              url: `./productSearch?searchClass=${this.topSearch}`
+          })
+      }
+    };
+
+    events = {};
+    props = {
+      hiddenSearch:{
+        type : Boolean,
+        default : false
+      },
+      cartNums:{
+        type : Number,
+        default : 0
+      },
+      topSearch:String
+    }
+}
+</script>
+
+<style lang="less">
+  .searchBox{
+    border-bottom: 1rpx solid rgb(226, 224, 224);
+    height: 100rpx;
+  }
+  .cardBoxFloat{
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+  }
+</style>

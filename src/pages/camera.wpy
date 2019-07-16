@@ -1,0 +1,131 @@
+<script>
+import wepy from 'wepy';
+
+export default class camera extends wepy.page {
+    config = {
+        disableScroll:true
+    };
+    components = {};
+
+    data = {
+        route:'',
+        flashSwitch:false,
+        tempImagePath:null,
+        moveLeft:160,
+        moveTop:150,
+        coverImg:''
+    };
+    methods = {
+        flashSwitch(){
+            this.flashSwitch = !this.flashSwitch
+        },
+        takePhoto() {
+            const ctx = wx.createCameraContext()
+            ctx.takePhoto({
+                quality: 'high',
+                success: (res) => {
+                    wx.vibrateShort()
+                    if(this.route == 'index'){
+                        wx.navigateTo({
+                            url: `./canvasTouchPen?canvasImg=${res.tempImagePath}`
+                        });
+                    }
+                    // console.log(res.tempImagePath)
+                    this.tempImagePath = res.tempImagePath
+                    this.$apply()
+                }
+            })
+        },
+        touchmove(e){
+            console.log(e.touches[0].pageX)
+            this.moveLeft = e.touches[0].pageX
+            this.moveTop = e.touches[0].pageY
+        },
+        shoppingCart(){
+            wx.navigateTo({
+                url: `./shoppingCard`
+            });
+        }
+    };
+
+    events = {};
+    onLoad(options) {
+        this.route = options.route
+        if(options.coverImg) this.coverImg = options.coverImg
+    };
+}
+</script>
+
+<template lang="wxml">
+    <camera device-position="back" flash="{{flashSwitch?'on':'off'}}" style="width: 100vw; height: 100vh;">
+        <cover-view class="rightTopBox">
+            <cover-image @tap="flashSwitch" class="rightTop rightTop1" src="{{flashSwitch?'../images/sgd_icon@2xOpen.png':'../images/sgd_icon@2x.png'}}"/>
+            <cover-image class="rightTop" src="../images/cart_icon@2x.png" @tap="shoppingCart"/>
+        </cover-view>
+        <cover-image class="bottom_left" src="../images/xc_icon@2x.png" hidden="{{route=='index'}}"/>
+        <cover-view @tap="takePhoto" class="takePhotoBtnBox"><button @tap="takePhoto"></button></cover-view>
+        <cover-image class="bottom_right" src="../images/add_icon@2x.png" hidden="{{route=='index'}}"/>
+        <cover-image class="testImg" src="{{coverImg}}" @touchmove='touchmove' style="left:{{moveLeft}}px;top:{{moveTop}}px" hidden="{{route=='index'}}"/>
+    </camera>
+</template>
+
+<style lang="less">
+    .rightTopBox{
+        display: flex;
+        padding: 24rpx 35rpx;
+        justify-content: flex-end;
+        align-items: center;
+        .rightTop{
+            width:  48rpx;
+            height: 45rpx;
+            
+        }
+        .rightTop1{
+            width:  59rpx;
+            height: 50rpx;
+            margin-right: 20rpx;
+        }
+    }
+    .takePhotoBtnBox{
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: fixed;
+        width: 140rpx;
+        height: 140rpx;
+        bottom: 40rpx;
+        border-radius: 50%;
+        overflow: hidden;
+        left: 0;
+        right: 0;
+        margin: auto;
+        border:10rpx solid #fff;
+        background-color: #5f83af;
+        button{
+            width: 125rpx;
+            height: 125rpx;
+            border-radius: 50%;
+            background-color: #5f83af;
+        }
+    }
+    .bottom_left,.bottom_right{
+        position: fixed;
+    }
+    .bottom_left{
+        width: 75rpx;
+        height: 75rpx;
+        bottom:80rpx;
+        left: 45rpx;
+    }
+    .bottom_right{
+        width: 80rpx;
+        height: 80rpx;
+        bottom:78rpx;
+        right: 45rpx;
+    }
+    .testImg{
+        position: fixed;
+        width: 170rpx;
+        height: 130rpx;
+    }
+</style>

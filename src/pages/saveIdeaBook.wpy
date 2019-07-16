@@ -1,0 +1,138 @@
+<script>
+import wepy from 'wepy';
+import api from '../api/api'
+import { request,toast,vailPhone } from '../utils/request'
+
+export default class saveIdeaBook extends wepy.page {
+    config = {
+        navigationBarTitleText: '收藏便签',
+    };
+    components = {};
+
+    data = {
+        options:null,
+        selectTitle:'请选择便签标题',
+        index:'',
+        array:[]
+    };
+    methods = {
+        bindPickerChange(e){
+            this.index = e.detail.value
+            this.selectTitle = ''
+            console.log(this.array[e.detail.value])
+        },
+        // 保存便签
+        formSubmit(e){
+            // console.log(e.detail.value.textarea,this.array[this.index])
+            if(e.detail.value.textarea && this.array[this.index]){
+                let data = {
+                    type : this.options.type,
+                    msg_id : this.options.id,
+                    source_type : 1,
+                    notes_id : this.array[this.index].id,
+                    remark : e.detail.value.textarea
+                };
+                let url = api.browseRecords;
+                request(url,'POST',data).then(res=>{
+                    wx.hideLoading();
+                    if(res.data.status == 200){
+                        toast('已添加至便签','success')
+                    }else{
+                        toast(res.data.message)
+                    }
+                })
+            }else{
+                toast('请完善信息')
+            }
+        }
+    };
+
+    events = {};
+    onLoad(options) {
+        console.log(options)
+        this.options = options
+        // 获取便签标题列表
+        request(api.notes).then(res=>{
+            wx.hideLoading();
+            this.array = res.data.message.data
+            this.$apply()
+        })
+    };
+    // Other properties
+}
+</script>
+
+<template lang="wxml">
+    <view class="selectTitleBox">
+        <view class="titleLeft">
+            <view>便签：</view>
+            <picker mode="selector" value="{{index}}" range="{{array}}" range-key='title' bindchange="bindPickerChange">
+                <view style="{{selectTitle?'color:#888':'color: #6483b1'}}">{{selectTitle?selectTitle:array[index].title}}</view>
+            </picker>
+        </view>
+        <image src="../images/runin_icon@2x.png" />
+    </view>
+    <form report-submit='true' bindsubmit='formSubmit'>
+        <view class='cover_form'>
+            <textarea placeholder="说点什么呢~" name='textarea'/>
+            <view class="imgBox"><image src="{{options.cover}}" mode="widthFix"/></view>
+        </view>
+        <view class="formBtnBox">
+            <button form-type="submit">保存</button>
+        </view>
+    </form>
+</template>
+
+<style lang="less">
+    .selectTitleBox{
+        height: 90rpx;
+        width: 100%;
+        padding: 0 30rpx;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background-color: #eee;
+        .titleLeft{
+            flex: 1;
+            display: flex;
+            align-items: center;
+            picker{
+                flex: 1;
+            }
+        }
+        image{
+            width: 23rpx;
+            height: 25rpx;
+        }
+    }
+    .cover_form{
+        width: 100%;
+        margin-top: 30rpx;
+        display: flex;
+        padding: 0 30rpx;
+        textarea{
+            flex: .6;
+        }
+        .imgBox{
+            flex: .4;
+            margin-left: 20rpx;
+            padding: 20rpx;
+            border: 1rpx solid rgb(214, 214, 214);
+            image{
+                width: 100%;
+            }
+        }
+    }
+    .formBtnBox{
+        width: 100%;
+        padding: 70rpx 88rpx;
+        button{
+            width: 100%;
+            height: 80rpx;
+            line-height: 80rpx;
+            font-size: 34rpx;
+            background-color: #6483b1;
+            color: #fff;
+        }
+    }
+</style>

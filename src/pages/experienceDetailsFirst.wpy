@@ -1,0 +1,340 @@
+<script>
+import wepy from 'wepy';
+import topSearch from '../compontens/topSearch'
+import api from '../api/api'
+import { request,toast,vailPhone } from '../utils/request'
+
+export default class experienceDetailsFirst extends wepy.page {
+    config = {};
+    components = {
+        topSearch
+    };
+
+    data = {
+        articleId:'',
+        hiddenSearch:true,
+        recommend:[
+            {
+                image:'../images/spfl1.png',
+                title: '美式简约单人现代休闲硬板凳',
+                brand:'NIKE',
+                price: 499,
+                originalPrice:699,
+                score:5
+            },
+            {
+                image:'../images/spfl1.png',
+                title: '美式简约单人现代休闲硬板凳',
+                brand:'NIKE',
+                price: 499,
+                originalPrice:699,
+                score:5
+            }
+        ],
+        allData:null,
+        stars: [0, 1, 2, 3, 4],
+        normalSrc: 'https://img.zhizubaba.com/UEUH1CLsNGCLKX6ywww6XDW0cZb6ONro0AjhjGPe.png',
+        selectedSrc: 'https://img.zhizubaba.com/xlJFcLEu1OZTqopKNI44gPmQE3m1n6SQE9St9fAS.png',
+        cartNums:0
+    };
+    methods = {
+        goDetails(goodsId,cover){
+            wx.navigateTo({
+                url: `./goodDetails?goodsId=${goodsId}&cover=${cover}`
+            });
+        },
+        // 跳转评论列表
+        businessReviews(){
+            wx.navigateTo({
+                url: `./businessReviews?id=${this.articleId}`
+            });
+        }
+    };
+
+    events = {};
+    onShow(){
+        this.cartNums = wx.getStorageSync('cartNums');
+    }
+    onLoad(options) {
+        // console.log(options.id)
+        this.articleId = options.id
+        let url = `${api.forums}/${options.id}` 
+        request(url).then(res=>{
+            wx.hideLoading();
+            res.data.message.binding.forEach(element => {
+                element.market = Number(element.market/100).toFixed(2)
+                element.price = Number(element.price/100).toFixed(2)
+            });
+            this.allData = res.data.message
+            this.$apply()
+        })
+    };
+    // Other properties
+}
+</script>
+
+<template lang="wxml">
+    <topSearch class="searchBox" :hiddenSearch.sync="hiddenSearch" :cartNums.sync="cartNums"/>
+    <view class="authorMessBox">
+        <view class="experienceTitle">{{allData.title}}</view>
+        <view class="articleContant">
+            {{allData.introduction}}
+        </view>
+        <view class="authorIconBox">
+            <image src="{{allData.icon}}" />
+            <view class="authorName">
+                <view class="author_name">{{allData.nickname}}</view>
+                <view>{{allData.signature}}</view>
+            </view>
+        </view>
+        <view class="iconFunctionBox">
+            <button class="iconFuctionItem">
+                <image src="../images/jxd_share.png" />
+                <view>{{allData.share_num}}</view>
+            </button>
+            <button class="iconFuctionItem">
+                <image src="../images/jxd_save.png" />
+                <view>{{allData.collect_num}}</view>
+            </button>
+            <button class="iconFuctionItem">
+                <image src="../images/jxd_comment.png" />
+                <view>{{allData.review}}</view>
+            </button>
+            <button class="iconFuctionItem">
+                <image src="../images/jxd_like.png" />
+                <view>{{allData.zan}}</view>
+            </button>
+        </view>
+    </view>
+    <view class="shadowLine"></view>
+    <!-- rich-text -->
+    <view class="richBox">
+        <rich-text nodes="{{allData.text}}"/>
+        <!-- 跳转模块 -->
+        <view class="jumpModeBox">
+            <view class="jumpModeTop">
+                <view class="jumpTitle">波特兰缅因州别墅</view>
+                <view class="jumpTitle" style="padding-bottom:25rpx">设计师：<text>卡普兰</text></view>
+                <view class="blueJump">查看这个房间的更多物品</view>
+                <view class="blueJump">产看当地的建筑师</view>
+            </view>
+            <view class="jumpModeTop">
+                <view class="jumpTitle">更多</view>
+                <view class="blueJump_" style="padding-bottom:8rpx">浏览外部照片寻找灵感</view>
+                <view class="blueJump_" style="padding-bottom:8rpx">在你附近找个专业人士</view>
+                <view class="blueJump_">户外家具商店</view>
+            </view>
+        </view>
+    </view>
+    <view class="shadowLine"></view>
+    <!-- 评论 -->
+    <view class="commentTitle">评论</view>
+    <view class="commentBox_">
+        <view class="commentBox">  <!-- 多条评论时候 此处遍历 -->
+            <view class="commentLeft">
+                <image src="https://timgsa.baidu.com/timg?image&quality=80&size=b9999_10000&sec=1552197717598&di=5ce146486ce64181c6480602fe9122b7&imgtype=0&src=http%3A%2F%2Fpic.9ht.com%2Fup%2F2018-2%2F201821215521574.jpg" />
+            </view>
+            <view class="commentRight">
+                <view class="commentUserName">周丽丽</view>
+                <view class="commentTime">
+                    <view>昨天 下午03：34</view>
+                    <view class="commentZan">
+                        <image src="../images/jxd_like.png" />
+                        <view>111</view>
+                    </view>
+                </view>
+                <view class="commentContant">
+                    着力把好正确政治方向，增强“四个意识”，坚决维护党中央权威和集中统一领导，在思想上政治上行动上始终同党中央保持高度一致，毫不动摇坚持党对军队绝对领导。要加强政治能力训练，增强政治敏锐性和政治鉴别力。要把管党治党责任担在肩上，做到敢管敢严、真管真严、长管长严。
+                </view>
+            </view>
+        </view>
+        <view class="grayLineMoreComment" @tap='businessReviews'>查看更多评论</view>
+    </view>
+    <view class="shadowLine"></view>
+    <!-- 聚购物 -->
+    <view class="commentTitle">聚购物</view>
+    <view class="goodsCategoryBox">
+        <view class="goodsCategoryItem activeBox recommend" wx:for='{{allData.binding}}' wx:key='' @tap='goDetails({{item.id}},{{item.cover_picture}})'>
+            <image src='{{item.cover_picture}}'/>
+            <view class="activePriceBox">
+                <view class="title">{{item.name}}</view>
+                <view class="brand">{{item.affiliated_name}}</view>
+                <view class="sell"><text>￥{{item.price}}</text><text class="throughLine">￥{{item.market}}</text></view>
+                <!-- <view>******(5)</view> -->
+                <view class="star-wrap">
+                    <view class="star">
+                        <view class = 'startBox'>
+                            <block wx:for="{{stars}}" wx:key='' wx:for-index="idx" wx:for-item="itemName">
+                                <image class="star-image" style="left: {{itemName*30}}rpx;" src="{{item.customer_rating > itemName ?selectedSrc : normalSrc}}">
+                                    <view class="item" style="left:0rpx" data-key="{{itemName+0.5}}"></view>
+                                    <view class="item" style="left:25rpx" data-key="{{itemName+1}}"></view>
+                                </image>
+                            </block>
+                        </view>
+                    </view>
+                    <view style="font-size:26rpx;transform: translateY(-4rpx)">({{item.customer_rating}})</view>
+                </view>
+            </view>
+            <image class="hostSellIcon" src="../images/jgw_rm.png"/>
+        </view>
+    </view>
+</template>
+
+<style lang="less">
+    .searchBox{
+        height: 78rpx;
+    }
+    .authorMessBox{
+        width: 100%;
+        padding: 30rpx 30rpx 22rpx 30rpx;
+        .experienceTitle{
+            font-size: 36rpx;
+        }
+        .articleContant{
+            width: 100%;
+            padding-top: 30rpx;
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+            overflow: hidden;
+        }
+        .authorIconBox{
+            display: flex;
+            align-items: center;
+            padding: 30rpx 0;
+            image{
+                width: 90rpx;
+                height: 90rpx;
+                border-radius: 50%;
+            }
+            .authorName{
+                flex: 1;
+                padding-left: 25rpx;
+                view:first-of-type{
+                    font-weight: bold;
+                }
+                view:last-of-type{
+                    width: 575rpx;
+                    overflow: hidden;
+                    text-overflow:ellipsis;
+                    white-space: nowrap;
+                }
+            }
+        }
+        .iconFunctionBox{
+            display: flex;
+            justify-content: space-between;
+            .iconFuctionItem{
+                display: flex;
+                align-items: center;
+                background-color: #fff;
+                margin: 0;
+                padding: 0;
+                image{
+                    width: 40rpx;
+                    height: 40rpx;
+                    margin-right: 18rpx;
+                }
+                view{
+                    height: 40rpx;
+                    line-height: 40rpx;
+                    font-size: 28rpx;
+                }
+            }
+        }
+    }
+    .richBox{
+        width: 100%;
+        padding: 30rpx;
+        .jumpModeBox{
+            width: 100%;
+            padding-top: 30rpx;
+            .jumpTitle{
+                font-weight: bold;
+                padding-bottom: 10rpx;
+                text{
+                    font-weight: normal;
+                    color: #6483b1;
+                }
+            }
+            .blueJump{
+                padding-bottom: 25rpx;
+                color: #6483b1;
+            }
+            .blueJump_{
+                color: #6483b1;
+            }
+        }
+    }
+    .commentTitle{
+        font-size: 34rpx;
+        color: #666;
+        padding: 30rpx;
+    }
+    .commentBox_{
+        width: 100%;
+        padding: 20rpx 30rpx 0 30rpx;
+        border-top: 1rpx solid #f1f1f1;
+        .commentBox{
+            width: 100%;
+            display: flex;
+            margin-bottom: 20rpx;
+            .commentLeft{
+                image{
+                    width: 65rpx;
+                    height: 65rpx;
+                    border-radius: 50%;
+                }
+            }
+            .commentRight{
+                width: 100%;
+                padding-left: 20rpx;
+                .commentUserName{
+                    font-size: 28rpx;
+                    color: #6483b1;
+                }
+                .commentTime{
+                    width: 100%;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    view:first-of-type{
+                        font-size: 26rpx;
+                        color: #666;
+                    }
+                    .commentZan{
+                        display: flex;
+                        align-items: center;
+                        padding-bottom: 15rpx;
+                        image{
+                            width: 35rpx;
+                            height: 35rpx;
+                            padding-right: 20rpx;
+                        }
+                        view{
+                            height: 35rpx;
+                            line-height: 35rpx;
+                            color: #666;
+                        }
+                    }
+                }
+                .commentContant{
+                    font-size: 28rpx;
+                    display: -webkit-box;
+                    -webkit-box-orient: vertical;
+                    -webkit-line-clamp: 3;
+                    overflow: hidden;
+                }
+            }
+        }
+        .grayLineMoreComment{
+            width: 100%;
+            height: 60rpx;
+            line-height: 60rpx;
+            text-align: center;
+            font-size: 28rpx;
+            color: #6483b1;
+            border-top: 1rpx solid #f1f1f1;
+        }
+    }
+</style>

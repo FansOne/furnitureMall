@@ -1,0 +1,511 @@
+<script>
+import wepy from 'wepy';
+import api from '../api/api'
+import { request,toast } from '../utils/request'
+export default class goodDetails extends wepy.page {
+    config = {
+        navigationBarTitleText: '产品详情',
+    };
+    components = {};
+
+    data = {
+        goodsId:'',
+        allData:null,
+        current:0,
+        imgUrls: [],
+        productDetailsImg:[],
+        currentBorder:0,
+        stars: [0, 1, 2, 3, 4],
+        normalSrc: 'https://img.zhizubaba.com/jBjH445aq0u0QbmvX1qITvCEOsjtYcynGcgHRVQ8.png',
+        selectedSrc: 'https://img.zhizubaba.com/YAH2TyGehe8AA0dRBLOqkuLMTavWBCxAqpMiuyIH.png',
+        inputValueNum:1,
+        maskHidden:true,
+        userSelectSku: {
+            title:'选择规格',
+            sku:{}
+        },
+        coverImg:'',
+    };
+    methods = {
+        swiperChange(event){
+            this.currentBorder = event.detail.current
+        },
+        changeBanner(index){
+            this.current = index
+            this.currentBorder = index
+        },
+        camera(){
+            wx.navigateTo({
+                url: `./camera?route=goodDetails&coverImg=${this.coverImg}`
+            })
+        },
+        subtracttap(){
+            if(this.inputValueNum<=1){
+                return
+            }else{
+                this.inputValueNum--
+            }
+        },
+        addtap(){
+            if(this.inputValueNum<this.userSelectSku.sku.stock){
+                this.inputValueNum++
+            }else{
+                toast('已达到最大库存量')
+            }
+        },
+        // 选择规格弹出窗
+        chooseSku(){
+            this.maskHidden = !this.maskHidden
+        },
+        // 选择规格
+        userSelectSku(item){
+            this.inputValueNum = 1
+            this.allData.sku.forEach(element => {
+                if(element.id == item.id){
+                    element.select = true
+                    this.userSelectSku.title = item.name
+                    this.userSelectSku.sku = item
+                }else{
+                    element.select = false
+                }
+            });
+        },
+        // 加入购物车
+        joinCart(){
+            let cartNums = Number(wx.getStorageSync('cartNums'));
+            if(!this.maskHidden){
+                if(this.userSelectSku.sku.stock == 0){
+                    toast('库存不足')
+                }else{
+                    let url = api.shoppingCart;
+                    let data = {
+                        merchants_id : this.allData.m_id,
+                        goods_id : this.goodsId,
+                        good_skus_id : this.userSelectSku.sku.id,
+                        num : this.inputValueNum
+                    };
+                    request(url,'POST',data).then(res=>{
+                        wx.hideLoading();
+                        if(res.data.status == 200){
+                            cartNums +=Number(this.inputValueNum)
+                            wx.setStorageSync('cartNums', cartNums);
+                            toast('添加成功','success')
+                            this.maskHidden = true
+                            this.$apply()
+                        }else{
+                            toast('数据异常')
+                        }
+                    })
+                }
+            }else{
+                this.maskHidden = false
+            }
+        },
+        // 收藏页
+        saveIdeaBook(id){
+            wx.navigateTo({
+                url: `./saveIdeaBook?id=${id}&cover=${this.coverImg}&type=1`
+            });
+        }
+    };
+
+    events = {};
+    onLoad(options) {
+        this.goodsId = options.goodsId
+        this.coverImg = options.cover
+        this.goodDetail(options.goodsId)
+    };
+    goodDetail(goodsId){
+        let url = `${api.goodList}/${goodsId}`;
+        request(url).then(res=>{
+            wx.hideLoading();
+            let productDetailsImg = [];
+            res.data.message.price = Number(res.data.message.price/100).toFixed(2)
+            res.data.message.sku[0].select = true
+            res.data.message.sku.forEach(element => {
+                element.price = Number(element.price/100).toFixed(2)
+            });
+            res.data.message.img.forEach(ele=>{
+                if(ele.type==2){
+                    productDetailsImg.push(ele)
+                }
+            })
+            this.allData = res.data.message
+            this.productDetailsImg = productDetailsImg
+            this.userSelectSku.sku = res.data.message.sku[0]
+            this.$apply()
+        })
+    }
+}
+</script>
+
+<template lang="wxml">
+    <!-- 顶部轮播 -->
+    <view class="topBannerBox">
+        <swiper current='{{current}}' circular @change='swiperChange'>
+            <block wx:for="{{productDetailsImg}}" wx:key=''>
+                <swiper-item>
+                <image src="{{item.src}}" class="slide-image"/>
+                </swiper-item>
+            </block>
+        </swiper>
+        <view class="smallIconBox">
+            <view wx:for='{{productDetailsImg}}' wx:key='' @tap='changeBanner({{index}})'>
+                <image src="{{item.src}}" class="{{index == currentBorder?'currentBorder':''}}"/>
+            </view>
+        </view>
+    </view>
+    <!-- 进入房间查看 -->
+    <view class="viewBox">
+        <image src="../images/view@2x.png" @tap='camera'/>
+    </view>
+    <!-- 产品说明（价格、标题、销量） -->
+    <view class="productExplain">
+        <view class="productTitle">
+            <view>{{allData.name}}</view>
+            <view>{{allData.affiliated_name}}</view>
+        </view>
+        <view class="star-wrap">
+            <view class="star">
+                <view class = 'startBox'>
+                    <block wx:for="{{stars}}" wx:key='idx'>
+                        <image class="star-image" style="left: {{item*30}}rpx;" src="{{allData.customer_rating > item ?selectedSrc : normalSrc}}">
+                            <view class="item" style="left:0rpx" data-key="{{item+0.5}}"></view>
+                            <view class="item" style="left:25rpx" data-key="{{item+1}}"></view>
+                        </image>
+                    </block>
+                </view>
+            </view>
+            <view style="font-size:26rpx;transform: translateY(-4rpx);color:#888888">{{allData.review}}条评价</view>
+        </view>
+        <view class="priceNumsBox">
+            <view>￥ {{allData.price}}</view>
+            <view>已售{{allData.sold}}件</view>
+        </view>
+        <view class="lineThrought"></view>
+    </view>
+    <!-- 规格选择入口 -->
+    <view class="skusEntranceBox">
+        <view class="entranceTop" @tap='chooseSku'>
+            <view class="skusName">
+                <view class="skusNameTitle">规格</view>
+                <block wx:for='{{allData.spec_name}}' wx:key=''>
+                    <view class="skusNameItem">{{item.spec_name}}、</view>
+                </block>
+            </view>
+            <view class="arrow">></view>
+        </view>
+        <view class="entranceBottom">
+            <view class="entranceBottomNum">购买数量</view>
+            <view class="addReduceBox">
+                <view class="subtract {{inputValueNum == 1 ? 'disabled': ''}}" @tap.stop='subtracttap'>-</view>
+                <input class='count' type='number' value='{{inputValueNum}}' disabled/>
+                <view class='add' @tap.stop="addtap">+</view>
+            </view>
+        </view>
+        <view class="lineThrought"></view>
+    </view>
+    <!-- 遮罩 -->
+    <view class="masks" hidden='{{maskHidden}}' @tap='chooseSku'></view>
+    <!-- 底部浮出 -->
+    <view class="bottomFloatBox {{maskHidden?'':'bottomFloatShow'}}" catchtouchmove>
+        <scroll-view scroll-y style="width:100%;height:764rpx;">
+            <view class="floatTopBox">
+                <image src="{{userSelectSku.sku.icon}}" />
+                <view class="floatTopRight">
+                    <view class="skusPrice">￥{{userSelectSku.sku.price}}</view>
+                    <view class="skusStock">库存{{userSelectSku.sku.stock}}件</view>
+                    <view class="skusItem">{{userSelectSku.title}}</view>
+                </view>
+            </view>
+            <view class="skusChooseLists">
+                <view class="skusChooseTitle">选择规格</view>
+                <view class="skusContantBox">
+                    <view wx:for='{{allData.sku}}' wx:key='' wx:for-index="idx" wx:for-item="entry" class="skusContantEntry {{entry.select?'userSelectSkuBg':''}}" @tap='userSelectSku({{entry}})'>{{entry.name}}</view>
+                </view>
+            </view>
+            <view class="entranceBottom" style="padding:25rpx 0 0 0;">
+                <view class="entranceBottomNum">购买数量</view>
+                <view class="addReduceBox">
+                    <view class="subtract {{inputValueNum == 1 ? 'disabled': ''}}" @tap.stop='subtracttap'>-</view>
+                    <input class='count' type='number' value='{{userSelectSku.sku.stock == 0?0:inputValueNum}}' disabled/>
+                    <view class='add' @tap.stop="addtap">+</view>
+                </view>
+            </view>
+        </scroll-view>
+    </view>
+    <!-- 商品详情 -->
+    <view class="detailsTitle">图文详情</view>
+    <!-- 详情长图 -->
+    <view class="detailImgBox">
+        <image wx:for='{{allData.img}}' wx:key='' src='{{item.src}}' wx:if='{{item.type == 3}}' lazy-load mode='widthFix'/>
+    </view>
+    <!-- 底部加入购物 -->
+    <view class="bottomJoinBox">
+        <button plain @tap='saveIdeaBook({{allData.id}})'><image src="../images/start.png" /><view>收藏</view></button>
+        <button @tap='joinCart'>加入购物车</button>
+    </view>
+</template>
+
+<style lang="less">
+    .topBannerBox{
+        width: 100%;
+        position: relative;
+        swiper{
+            height: 400rpx;
+            image{
+                width: 100%;
+            }
+        }
+        .smallIconBox{
+            width: 100%;
+            height: 150rpx;
+            position: absolute;
+            bottom: -75rpx;
+            left: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            padding: 0 60rpx;
+            image{
+                width: 150rpx;
+                height: 150rpx;
+                border: 1rpx solid #dcdcdc;
+            }
+        }
+    }
+    .currentBorder{
+        border: 2rpx solid #6483b1 !important;
+    }
+    .viewBox{
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        padding-top: 100rpx;
+        image{
+            height: 85rpx;
+            width: 189rpx;
+        }
+    }
+    .productExplain{
+        width: 100%;
+        padding: 30rpx 30rpx 30rpx 30rpx;
+        .productTitle{
+            width: 100%;
+            display: flex;
+            padding-bottom: 15rpx;
+            view:first-of-type{
+                flex: .3;
+            }
+            view:last-of-type{
+                flex: .7;
+                padding-left: 10rpx;
+                overflow: hidden;
+                text-overflow:ellipsis;
+                white-space: nowrap;
+            }
+        }
+        .priceNumsBox{
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15rpx 0 25rpx 0;
+            view:first-of-type{
+                font-size: 40rpx;
+                color: #6483b1;
+            }
+            view:last-of-type{
+                font-size: 28rpx;
+                color: #888888;
+            }
+        }
+    }
+    .skusEntranceBox{
+        width: 100%;
+        padding: 0 30rpx;
+        .entranceTop{
+            padding-bottom: 60rpx;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            .skusName{
+                display: flex;
+                .skusNameTitle{
+                    font-size: 28rpx;
+                    transform: translateY(2rpx);
+                }
+                .skusNameItem{
+                    padding-left: 20rpx;
+                    font-size: 30rpx;
+                }
+            }
+            .arrow{
+                font-size: 33rpx;
+            }
+        }
+    }
+    .disabled{
+        color: #eee;
+    }
+    .lineThrought{
+        width: 100%;
+        height: 2rpx;
+        background-color: #d2d2d2;
+    }
+    .detailsTitle{
+        padding: 20rpx 30rpx;
+        color: #888888;
+    }
+    .detailImgBox{
+        width: 100%;
+        padding: 0rpx 25rpx 134rpx 25rpx;
+        image{
+            width: 100%;
+        }
+    }
+    .bottomJoinBox{
+        z-index: 20;
+        background-color: #fff;
+        width: 100%;
+        position: fixed;
+        bottom: 0rpx;
+        padding: 20rpx 30rpx;
+        border-top: 1rpx solid #f1f1f1;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        button:first-of-type{
+            width: 160rpx;
+            height: 88rpx;
+            padding: 0 10rpx;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            border: 1rpx solid #6483b1;
+            image{
+                width: 45rpx;
+                height: 45rpx;
+            }
+            view{
+                font-size: 33rpx;
+                color: #6483b1;
+            }
+        }
+        button:last-of-type{
+            margin: 0;
+            padding: 0;
+            background-color: #6483b1;
+            color: #fff;
+            width: 480rpx;
+        }
+    }
+    .bottomFloatBox{
+        z-index: 20;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 915rpx;
+        padding: 15rpx 30rpx;
+        background-color: #fff;
+        border-radius: 10rpx 10rpx 0 0;
+        transform: translateY(915rpx);
+        transition: transform .4s;
+        .floatTopBox{
+            display: flex;
+            align-items: center;
+            image{
+                width: 240rpx;
+                height: 240rpx;
+                border-radius: 10rpx;
+                border: 1rpx solid #f1f1f1;
+            }
+            .floatTopRight{
+                flex: 1;
+                height: 240rpx;
+                padding-left: 40rpx;
+                padding-bottom: 7rpx;
+                display: flex;
+                flex-direction: column;
+                justify-content: flex-end;
+                .skusPrice{
+                    font-size: 40rpx;
+                    color: #6483b1;
+                }
+                .skusStock{
+                    font-size: 24rpx;
+                    color: #bdbebf;
+                    width: 100%;
+                    padding: 10rpx 0 30rpx 10rpx;
+                }
+                .skusItem{
+                    font-size: 28rpx;
+                    color: #0e0e0e;
+                    width: 100%;
+                    padding-left:10rpx;
+                }
+            }
+        }
+        .skusChooseLists{
+            width: 100%;
+            padding: 50rpx 0 15rpx 0;
+            border-bottom: 1rpx solid #eee;
+            .skusChooseTitle{
+                color: #0e0e0e;
+            }
+            .skusContantBox{
+                width: 100%;
+                display: flex;
+                align-items: center;
+                flex-flow: wrap;
+                padding-top: 30rpx;
+                padding-bottom: 15rpx;
+                .skusContantEntry{
+                    background-color: #eee;
+                    border-radius: 8rpx;
+                    font-size: 25rpx;
+                    padding: 15rpx;
+                    margin-right: 20rpx;
+                    min-width: 135rpx;
+                    text-align: center;
+                }
+                .userSelectSkuBg{
+                    background-color: #6483b1;
+                    color: #fff;
+                }
+            }
+        }
+    }
+    .entranceBottom{
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-bottom: 20rpx;
+        .entranceBottomNum{
+            font-size: 28rpx;
+        }
+        .addReduceBox{
+            display: flex;
+            align-items: center;
+            .subtract,.add{
+                width: 50rpx;
+                height: 50rpx;
+                border: 1rpx solid #e2e8f1;
+                line-height: 46rpx;
+                text-align: center;
+            }
+            .add{
+                background-color: #eee;
+            }
+            input{
+                width: 67rpx;
+                text-align: center;
+            }
+        }
+    }
+    .bottomFloatShow{
+        transform: translateY(0) !important;
+    }
+</style>

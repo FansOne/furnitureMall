@@ -1,0 +1,212 @@
+<style lang="less">
+</style>
+<template>
+  <view class="container">
+    <!-- search -->
+    <view class='searchBox'>
+      <view class='search_btn'>
+        <open-data class='userLog' type='userAvatarUrl'/>
+        <view></view>
+        <button open-type='getUserInfo' @getuserinfo="onGotUserInfo"/>
+      </view>
+      <!-- 搜索框 -->
+      <view class='inputBox'>
+        <image src='../images/home_search_icon.png'/>
+        <view style='color:#b6b6b6;font-size:30rpx;width:100%' @tap='bindfocus'>请输入名称</view>
+      </view>
+      <!-- 购物车 -->
+      <view class='cardBox' @tap='goShoppingCard'>
+        <image src='../images/home_cart_icon.png'/>
+        <view>{{cartNums}}</view>
+      </view>
+    </view>
+    
+    <!-- tabMenu -->
+    <view class='orderTabs'>
+        <!--循环-->
+        <view wx:for="{{navbar}}" wx:key="unique" class="item {{currentTab==index ? 'active' : ''}}" @tap="navbarTap({{index}})">
+            {{item}}
+        </view>
+    </view>
+    
+    <!-- 主页 -->
+    <scroll-view wx:if="{{currentTab == 0}}" scroll-y style='height:{{scrollHeight}}px' bindscrolltolower='paging'>
+        <indexTab :syncData.sync="1"/>
+    </scroll-view>
+    <!-- 聚案例 -->
+    <scroll-view wx:if="{{currentTab == 1}}" scroll-y style='height:{{scrollHeight}}px' bindscrolltolower='paging'>
+        <caseTab :syncData.sync="1" :caseClass.sync='caseClass'/>
+    </scroll-view>
+    <!-- 聚购物 -->
+    <scroll-view wx:if="{{currentTab == 2}}" scroll-y style='height:{{scrollHeight}}px' bindscrolltolower='paging'>
+        <shoppingTab :syncData.sync="1"/>
+    </scroll-view>
+    <!-- 聚服务 -->
+    <scroll-view wx:if="{{currentTab == 3}}" scroll-y style='height:{{scrollHeight}}px' bindscrolltolower='paging'>
+        <serviceTab :syncData.sync="1"/>
+    </scroll-view>
+    <!-- 聚心得 -->
+    <scroll-view wx:if="{{currentTab == 4}}" scroll-y style='height:{{scrollHeight}}px' bindscrolltolower='paging'>
+        <experience :syncData.sync="1" :caseClass.sync='caseClass'/>
+    </scroll-view>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy'
+  import indexTab from '../compontens/indexTab'
+  import caseTab from '../compontens/caseTab'
+  import shoppingTab from '../compontens/shoppingTab'
+  import serviceTab from '../compontens/serviceTab'
+  import experience from '../compontens/experience'
+  
+  import api from '../api/api'
+  import { request,toast } from '../utils/request'
+
+  export default class Index extends wepy.page {
+    config = {}
+    components = {
+      indexTab,
+      caseTab,
+      shoppingTab,
+      serviceTab,
+      experience
+    }
+    data = {
+      navbar: ['主页', '聚案例', '聚购物', '聚服务', '聚心得'],
+      currentTab: 0,
+      scrollHeight:'',
+      caseClass:[],
+      cartNums:0
+    }
+    watch = {
+      currentTab (newValue, oldValue) {
+          //获取顶部筛选项数据
+          if(newValue == 1){
+            this.getAttributes(2)
+          }else if(newValue == 4){
+            this.getAttributes(3)
+          }
+          // 获取index下tab数据
+          this.$broadcast('currentTab',this.currentTab)
+      }
+    }
+    onShareAppMessage(res){
+        if(res.from == 'button'){
+          // console.log(res.target.dataset)
+          let dataset = res.target.dataset;
+          return {
+            title: `${dataset.title}装修展示案例`,
+            path: `./pages/index`,
+            imageUrl : dataset.img
+          }
+        }
+    }
+    methods = {
+      navbarTap(status){
+          this.currentTab = status;
+          this.$broadcast('currentTab',status)
+      },
+      onGotUserInfo(e){
+        if(e.detail.errMsg == 'getUserInfo:ok'){
+          let userMess = e.detail.userInfo;
+          let data = {};
+          // TODO
+          let url = api.userOne;
+
+          data.nickName = userMess.nickName
+          data.gender = userMess.gender       //userInfo.gender 性别 0：未知、1：男、2：女
+          data.avatarUrl = userMess.avatarUrl
+          if(userMess.province && userMess.city) data.address = `${userMess.province}${userMess.city}`
+          
+          request(url,"PUT",data).then(res=>{
+            wx.hideLoading();
+            if(res.data.status == 200){
+              wx.navigateTo({
+                url: './mine'
+              })
+            }else{
+              toast(res.data.message||'服务器数据异常')
+            }
+          })
+        }
+      },
+      goShoppingCard(){
+        wx.navigateTo({
+          url: './shoppingCard'
+        })
+      },
+      // 跳转搜索
+      bindfocus(){
+        wx.navigateTo({
+          url: `./productSearch?searchClass=${this.currentTab==0 || this.currentTab==2?'goodsSearch':(this.currentTab==1?'caseSearch':(this.currentTab==3?'designSearch':'experienceSearch'))}`
+        });
+      }
+    }
+    events = {
+      // Tab跳转
+      tabJump:(index)=>{
+        this.currentTab = index
+      },
+      // 获取购物车数量
+      cartNums:(cartNums)=>{
+        this.cartNums = cartNums
+      }
+    }
+    onShow(){
+      if(wx.getStorageSync('cartNums')){
+        this.cartNums = wx.getStorageSync('cartNums');
+      }
+    }
+    onLoad(options) {
+      if (options.currentTab) this.currentTab = options.currentTab //便签跳转
+      let token = wx.getStorageSync('token');
+      if(token){
+        this.$broadcast('currentTab',0) //首页数据加载
+      }else{                            //解决onLaunch与onLoad异步执行问题
+        this.$parent.signIn().then(res=>{
+          wx.setStorage({
+            key: 'token',
+            data: res.data.message.access_token,
+            success:()=>{
+              this.$broadcast('currentTab',0)
+            }
+          });
+        })
+      }
+      wx.getSystemInfo({
+          success:(res)=> {
+              //创建节点选择器
+              let height = 0;
+              let query = wx.createSelectorQuery();
+              query.select('.searchBox').boundingClientRect()
+              query.select('.orderTabs').boundingClientRect()
+              query.exec((result) => {
+                  result.forEach(element => {
+                      return height+= element.height
+                  });
+                  this.scrollHeight = res.windowHeight - height
+                  this.$apply()
+              })
+          }
+      })
+    }
+    // 获取顶部筛选选项
+    getAttributes(type){
+        let url = api.getAttributes;
+        let data = {
+            type:type //1 聚购物 2 聚案例 3聚心得 话题
+        };
+        request(url,"GET",data).then(res=>{
+            wx.hideLoading();
+            // console.log(res.data.message)
+            this.caseClass = res.data.message
+            this.$apply()
+        })
+    }
+    // 触底加载
+    paging(){
+      // wx.showLoading({ title: '加载中...' });
+    }
+  }
+</script>

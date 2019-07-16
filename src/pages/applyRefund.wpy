@@ -1,0 +1,355 @@
+<script>
+let arr = [];
+let pics = [];
+import wepy from 'wepy';
+import api from '../api/api'
+import { request,toast } from '../utils/request'
+
+export default class applyRefund extends wepy.page {
+    config = {
+        navigationBarTitleText: '申请退款',
+    };
+    components = {};
+
+    data = {
+        // 聚购物商品&服务数据
+        orderGoods:null,
+        orderId:'',    //订单ID
+        direction:'',
+        affiliatedText:'', //服务订单副标题
+        total_price:0,  //商品总价
+        goodStatus:[
+            {
+                id:0,
+                lable:'未收货/服务'
+            },
+            {
+                id:1,
+                lable:'已收货/服务'
+            },
+        ],
+        goodStatusText:true,
+        refundReasonText:true,
+        goodStatusIndex:0,
+        refundReason:[
+            {
+                id:2,
+                lable:'不喜欢/不想要'
+            },
+            {
+                id:3,
+                lable:'价格不合理'
+            },
+            {
+                id:4,
+                lable:'实物/服务与说明不符'
+            },
+            {
+                id:5,
+                lable:'多拍了/重新拍'
+            },
+        ],
+        refundReasonIndex:0,
+        // 用户上传图片
+        tempFilePaths:[],
+        SurplusUploadNum:'',
+        count:8,
+    };
+    methods = {
+        bindPickerChange(e) {
+            this.goodStatusText = false
+            this.goodStatusIndex = e.detail.value
+        },
+        reasonPickerChange(e){
+            this.refundReasonText = false
+            this.refundReasonIndex = e.detail.value
+        },
+        chooseImage(){
+            this.count =  8 - this.tempFilePaths.length
+            this.$apply()
+            if(this.tempFilePaths.length < 8){
+                wx.chooseImage({
+                    count: this.count,
+                    sizeType: ['original', 'compressed'],
+                    sourceType: ['album', 'camera'],
+                    success: (res)=> {
+                        pics = []
+                        arr = arr.concat(res.tempFilePaths)
+                        this.tempFilePaths = arr
+                        this.SurplusUploadNum = this.count-1
+                        this.$apply()
+                        this.tempFilePaths.forEach(element => {
+                            wx.uploadFile({
+                                url:'https://api.zhizubaba.com/api/up_images',
+                                filePath: element,
+                                header:{
+                                    'Content-Type':'multipart/form-data'                                  
+                                },
+                                name: 'files',
+                                success:  (res)=> {
+                                  pics.push(JSON.parse(res.data).message)
+                                }
+                            })
+                        });
+                    }
+                })
+            }else{
+                wx.showToast({
+                    title: '已达到上传上限！',
+                    icon: 'none'
+                });
+            }
+        },
+        // 申请退款
+        formSubmit(e){
+            let formValue = e.detail.value;
+            if(!this.refundReasonText){
+                let data = {
+                    msg : `${this.refundReason[formValue.refundReason].lable} ${formValue.refundExplain}`
+                }
+                if(pics.length) data.img = JSON.stringify(pics)
+                if(this.direction == 'shopping') data.order_id = this.orderId
+                // 商品/服务退款请求
+                request(this.direction == 'shopping'?api.order_refund:`${api.work_orders}/${this.orderId}`,this.direction == 'shopping'?'POST':'PUT',data).then(res=>{
+                    wx.hideLoading();
+                    if(res.data.status == 200){
+                        toast('已提交申请','success')
+                        setTimeout(() => {
+                            wx.reLaunch({
+                                url: `./orderLists`
+                            });
+                        }, 600);
+                    }else{
+                        toast(res.data.message)
+                    }
+                })
+            }else{
+                toast('请选择退款原因')
+            }
+        }
+    };
+
+    events = {};
+    onLoad(options) {
+        this.orderId = options.id
+        this.orderGoods = JSON.parse(options.item)
+        this.direction = options.direction
+        this.affiliatedText = options.affiliatedText
+        this.total_price = options.total_price
+    };
+    onUnload(){
+        arr = [];
+        pics = [];
+    }
+}
+</script>
+
+<template lang="wxml">
+    <!-- 聚购物商品 -->
+    <view class="goodsItemBox" wx:if="{{direction == 'shopping'}}" wx:for='{{orderGoods}}' wx:key=''>
+        <image src="{{item.icon}}" />
+        <view class="goodItemRight">
+            <view>
+                {{item.shopName}}
+            </view>
+            <view class="goodsSkus">
+                <view>{{item.skuName}}</view>
+                <view>x{{item.num}}</view>
+            </view>
+        </view>
+    </view>
+    <!-- 服务商品 -->
+    <view class="goodsItemBox" wx:if="{{direction == 'service'}}">
+        <image src="{{orderGoods.cover}}" />
+        <view class="goodItemRight">
+            <view>
+                {{orderGoods.shopName}}
+            </view>
+            <view class="affiliatedText">
+                {{affiliatedText}}
+            </view>
+        </view>
+    </view>
+    <form bindsubmit="formSubmit">
+        <!-- 商品状态 -->
+        <view class="pickerBox">
+            <view>商品状态</view>
+            <picker @change="bindPickerChange" value="{{index}}" range="{{goodStatus}}" range-key='lable' name='goodStatus'>
+                <view wx:if='{{goodStatusText}}' style="color:#888">请选择 ></view>
+                <view wx:else>{{goodStatus[goodStatusIndex].lable}} ></view>
+            </picker>
+        </view>
+        <!-- 退款原因 -->
+        <view class="pickerBox">
+            <view>退款原因</view>
+            <picker @change="reasonPickerChange" value="{{index}}" range="{{refundReason}}" range-key='lable' name='refundReason'>
+                <view wx:if='{{refundReasonText}}' style="color:#888">请选择 ></view>
+                <view wx:else>{{refundReason[refundReasonIndex].lable}} ></view>
+            </picker>
+        </view>
+        <!-- 退款金额 -->
+        <view class="refundPrice">
+            <view>退款金额：</view>
+            <view>￥{{total_price}}</view>
+        </view>
+        <!-- 退款说明 -->
+        <view class="refundExplain">
+            <view>退款说明：</view>
+            <input placeholder="选填" placeholder-style="font-size:28rpx;color:#cdcdcd" name='refundExplain'/>
+        </view>
+        <view class="shadowLine"></view>
+        <!-- 图片上传 -->
+        <view class="uploadImgBox">
+            <view class="uploadImgTitle">上传凭证<text class="promptNum" wx:if="{{SurplusUploadNum != '' }}">可上传图片剩余数量<text style='color:#ff9e6e;font-size:24rpx;'>{{8-tempFilePaths.length}}</text>张</text></view>
+            <view class="chooseImgBox">
+                <image class="chooseImg" src="../images/camera_icon@2x.png" @tap='chooseImage'/>
+                <image wx:for='{{tempFilePaths}}' wx:key='' src='{{item}}' class='userSelectImgbox'/>
+            </view>
+        </view>
+        <!-- 提交申请 -->
+        <view class="submitBtn">
+            <button form-type="submit">提交申请</button>
+        </view>
+    </form>
+</template>
+
+<style lang="less">
+    page{
+        border-top: 1rpx solid rgb(236, 235, 235);
+        padding-top: 20rpx;
+    }
+    .goodsItemBox{
+        display: flex;
+        align-items: center;
+        width: 100%;
+        padding: 0 30rpx;
+        padding-bottom: 20rpx;
+        border-bottom: 1rpx solid rgb(236, 235, 235);
+        image{
+            width: 140rpx;
+            height: 140rpx;
+            border:1rpx solid #eee;
+        }
+        .goodItemRight{
+            flex: 1;
+            padding-left: 25rpx;
+            height: 140rpx;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            view:first-of-type{
+                font-size: 26rpx;
+                overflow: hidden;
+                text-overflow:ellipsis;
+                white-space: nowrap;
+            }
+            .goodsSkus{
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                view{
+                    flex: .5;
+                    font-size: 24rpx;
+                    color: #9f9f9f;
+                    display: -webkit-box;
+                    -webkit-box-orient: vertical;
+                    -webkit-line-clamp: 2;
+                    overflow: hidden;
+                }
+                view:last-of-type{
+                    text-align: right;
+                }
+            }
+            .affiliatedText{
+                font-size: 24rpx;
+                color: #9f9f9f;
+                display: -webkit-box;
+                -webkit-box-orient: vertical;
+                -webkit-line-clamp: 2;
+                overflow: hidden;
+            }
+        }
+    }
+    form{
+       .pickerBox {
+           width: 100%;
+           padding: 35rpx 30rpx;
+           display: flex;
+           align-items: center;
+           justify-content: space-between;
+           border-bottom: 1rpx solid rgb(236, 235, 235);
+           view:first-of-type{
+               font-size: 28rpx;
+           }
+           picker{
+               view{
+                   font-size: 26rpx;
+               }
+           }
+       }
+       .refundPrice{
+           width: 100%;
+           display: flex;
+           align-items: center;
+           height: 100rpx;
+           line-height: 100rpx;
+           padding: 0 30rpx;
+           box-shadow: 0 0 20rpx #f0f0f0;
+           view:first-of-type{
+               font-style: 36rpx;
+           }
+           view:last-of-type{
+               font-size: 36rpx;
+               color: #6483b1;
+           }
+       }
+       .refundExplain{
+           width: 100%;
+           display: flex;
+           padding: 25rpx 30rpx;
+           padding-bottom: 20rpx;
+           align-items: center;
+           view{
+               font-size: 28rpx;
+           }
+           input{
+               flex: 1;
+               font-size: 28rpx;
+               padding-left: 15rpx;
+           }
+       }
+       .uploadImgBox{
+           width: 100%;
+           padding: 30rpx;
+           padding-bottom: 120rpx;
+           .uploadImgTitle{
+               font-size: 28rpx;
+               .promptNum{
+                   display: inline-block;
+                   padding-left: 25rpx;
+                   font-size: 26rpx;
+                   color: #999;
+               }
+           }
+           .chooseImgBox{
+               display: flex;
+               align-items: center;
+               flex-wrap: wrap;
+               padding-top: 25rpx;
+               .chooseImg{
+                   width: 140rpx;
+                   height: 140rpx;
+                   margin-right: 20rpx;
+                   margin-bottom: 20rpx;
+               }
+               .userSelectImgbox{
+                   width: 140rpx;
+                   height: 140rpx;
+                   border-radius: 10rpx;
+                   margin-right: 20rpx;
+                   margin-bottom: 20rpx;
+               }
+           }
+       }
+    }
+</style>

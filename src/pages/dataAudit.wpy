@@ -1,0 +1,474 @@
+<script>
+import wepy from 'wepy';
+import api from '../api/api'
+import { request,toast,vailPhone } from '../utils/request'
+
+export default class detaAudit extends wepy.page {
+    config = {
+        navigationBarTitleText: '资料审核',
+        backgroundColor:'#eeeeee'
+    };
+    components = {};
+
+    data = {
+        // multiArray:[],
+        occupationArray:[],
+        // multiIndex: [0,0,0],
+        multiIndex1:[0,0],
+        avatarUrl:'',
+        provinces:null,
+        occupation:null,
+        showSelectCity:false,
+        showSelectCity1:false,
+        showSelectCity2:false,
+        timeValue:'',
+        currentYear:'',
+        phoneInput:'',
+        verificationShow:false,
+        verificationCode:'',
+        textareaValue:null,
+        textareaShow:false,
+        textareaData:"暂无数据",
+        editTextareaContant:'编辑',
+        area_id:'',     //省市区邮政编码
+        service_cate_id:'', //职业id
+        latitude:'',
+        longitude:'',
+        companyAddress:'',
+    };
+    methods = {
+        // 选择职业滑动
+        bindMulti1PickerColumnChange(e){
+            // console.log(e.detail.column,e.detail.value)
+            let columSwiper = e.detail.column;
+            let swiperValue = e.detail.value;
+            if(columSwiper == 0){
+                this.occupationArray[1] = this.occupation[swiperValue].children
+                this.multiIndex1[0] = swiperValue
+            }else{ //滑动第二列
+                this.multiIndex1[1] = swiperValue
+            }
+            this.showSelectCity1 = true
+            // 职业id
+            this.service_cate_id = `${this.occupationArray[1][this.multiIndex1[1]].id}`
+            // ${this.occupationArray[0][this.multiIndex1[0]].id},
+            this.$apply()
+        },
+        //选择职业change事件
+        bindMulti1PickerChange(e){
+            // console.log(e.detail.value)
+            this.multiIndex1 = e.detail.value
+            this.showSelectCity1 = true
+        },
+        //选择城市change事件
+        bindMultiPickerChange(e){
+            // console.log('picker发送选择改变，携带值为', e.detail.value)
+            this.multiIndex = e.detail.value
+        },
+        // 选择从业年限
+        bindDateChange(e) {
+            this.timeValue = e.detail.value
+            this.yearSelect = false
+            this.showSelectCity2 = true;
+        },
+        //获取手机验证码
+        getSms(){
+            console.log(this.phoneInput)
+            let checkPhoneNum = vailPhone(this.phoneInput);
+            if(checkPhoneNum == false){
+                toast('请输入正确手机号')
+            }else{
+                let url = api.getSms;
+                let data = {
+                    mobile : this.phoneInput
+                };
+                request(url,'GET',data).then(res=>{
+                    wx.hideLoading();
+                    // console.log(res.data)
+                    if(res.data.status == 200){
+                        this.verificationShow = true
+                        this.verificationCode = res.data.message
+                        this.$apply()
+                        toast('发送成功','success')
+                    }else{
+                        toast((res.data.message || '数据异常'))
+                    }
+                })
+            }
+        },
+        // 监听用户输入手机号码
+        phoneInput(e){
+            // console.log(e.detail.value)
+            this.phoneInput = e.detail.value
+            this.$apply()
+        },
+        // 编辑荣誉记录
+        editTextarea(){
+            this.textareaShow = !this.textareaShow
+            if(this.textareaShow == false){
+                this.textareaValue = ''
+                this.editTextareaContant = '编辑'
+                this.textareaData = '暂无数据'
+            }else{
+                this.editTextareaContant = '取消'
+            }
+        },
+        // 写入荣誉记录
+        bindTextAreaInput(e) {
+            if(e.detail.value){
+                this.textareaData = '已写入荣誉记录'
+            }else{
+                this.textareaData = '暂无数据'
+            }
+        },
+        // 返回上级页面
+        backPage(){
+            wx.navigateBack({
+                delta: 1
+            });
+        },
+        // form提交
+        formSubmit(e){
+            // verificationCode
+            let formValue = e.detail.value;
+            let formId = e.detail.formId;
+            let area_id = this.area_id; //省市区邮政编码
+            let service_cate_id = this.service_cate_id; //职业id
+            // console.log(e.detail.value)
+            let messageComplete = false;
+            if(formValue.verificationCode){
+                if(area_id && service_cate_id){
+                    Object.keys(formValue).forEach((key)=>{
+                        // console.log(formValue[key]);
+                        if(formValue[key]){
+                            messageComplete = true
+                        }else{
+                            messageComplete = false
+                            toast('请完善信息后提交')
+                        }
+                    })
+                }else{
+                    toast('请选择地区或职业')
+                }
+            }else{
+                toast('请验证你的手机号码')
+            }
+            if(messageComplete){
+                let url = api.dataAudit;
+                let data = {
+                    name : formValue.userName,
+                    working_years : formValue.workYear,
+                    area_id : area_id,
+                    address : formValue.companyAddress,
+                    service_cate_id :service_cate_id,
+                    charges : `${formValue.minimumPrice}-${formValue.highestPrice}`,
+                    mobile : formValue.phoneNum,
+                    bankcard : formValue.IDCard,
+                    title : formValue.shopName,
+                    from_id : formId,
+                    code : formValue.verificationCode,
+                    longitude : this.longitude,
+                    latitude : this.latitude,
+                    honor : formValue.textareaValue
+                };
+                request(url,'POST',data).then(res=>{
+                    // console.log(res.data)
+                    if(res.data.status == 200){
+                        toast('已提交审核','success')
+                        setTimeout(() => {
+                            wx.redirectTo({
+                                url: './mine'
+                            })
+                        }, 1100);
+                    }else{
+                        toast(res.data.message||'服务器异常')
+                    }
+                })
+            }else{
+                toast('请完善信息后提交')
+            }
+        }
+    };
+
+    events = {};
+    onShow(){
+        // 获取经纬度
+        wx.getLocation({
+            type: 'wgs84',
+            success: res => {
+                this.latitude = res.latitude
+                this.longitude = res.longitude
+                this.$apply()
+                // 逆地址解析
+                this.geoCoder(res.latitude,res.longitude)
+            },
+            fail: res=> {
+                wx.getSetting({
+                    success:  (res)=> {
+                        var statu = res.authSetting;
+                        if (!statu['scope.userLocation']) {
+                            wx.showModal({
+                                title: '是否授权当前位置',
+                                content: '需要获取您的地理位置，请确认授权，否则审核认证将无法继续',
+                                success:  (tip)=> {
+                                    if (tip.confirm) {
+                                        wx.openSetting({
+                                            success: (data)=> {
+                                                if (data.authSetting["scope.userLocation"] === true) {
+                                                    toast('授权成功','success')
+                                                    //授权成功之后，再调用getLocation获取经纬度
+                                                    wx.getLocation({
+                                                        type: 'wgs84',
+                                                        success: res => {
+                                                            this.latitude = res.latitude
+                                                            this.longitude = res.longitude
+                                                            this.$apply()
+                                                        },
+                                                    })
+                                                } else {
+                                                    toast('授权失败')
+                                                }
+                                            }
+                                        })
+                                    }else if (tip.cancel) {
+                                        wx.navigateBack({
+                                            delta: 1
+                                        });
+                                    }
+                                }
+                            })
+                        }
+                    },
+                    fail: (res)=> {
+                        toast('调用授权窗口失败')
+                    }
+                })
+            }
+        })
+    }
+    onLoad(options) {
+        let date=new Date;
+        let year=date.getFullYear(); 
+        this.currentYear = year-1
+        this.avatarUrl = options.avatarUrl
+        //获取数据库数据
+        // this.getCityInfo()
+        //获取职业类别
+        request(api.getServiceCategories).then(res=>{
+            // console.log(res.data.message)
+            wx.hideLoading();
+            let occupationArray = [];
+            res.data.message.forEach(element => {
+                let occupationOjb = {
+                    id : element.id,
+                    label : element.label
+                }
+                occupationArray.push(occupationOjb)
+            });
+            this.occupation = res.data.message;
+            this.occupationArray = [occupationArray,res.data.message[0].children]
+            this.service_cate_id = res.data.message[0].children[0].id
+            this.$apply()
+            // console.log(res.data.message)
+            // console.log(this.occupationArray)
+        })
+    };
+    // 逆地址解析
+    geoCoder(latitude,longitude){
+        let url = api.geoCoder;
+        let data = {
+            lat : latitude,
+            lng : longitude
+        };
+        request(url,"GET",data).then(res=>{
+            // console.log(res.data.message)
+            wx.hideLoading();
+            let addressInfo = res.data.message;
+            this.area_id = res.data.message.id
+            this.companyAddress = `${addressInfo.province} ${addressInfo.city} ${addressInfo.address}`
+            this.$apply()
+        })
+    }
+    //获取数据库数据
+    getCityInfo(){
+        wx.showLoading({title: 'loading...'})
+        const db = wx.cloud.database({})
+        //因为数据库只存有一个总的数据字典，所以指定它的ID直接获取数据
+        var that = this
+        db.collection('cityDataArr').doc('5c9259a575d9017de16cba2c').get({
+            success: res=>{
+                wx.hideLoading();
+                if (res.data){
+                    //获取云数据库数据
+                    var temp = res.data.data;
+                    //初始化更新数据
+                    that.provinces = temp
+                    that.multiArray = [temp, temp[0].citys, temp[0].citys[0].areas]
+                    that.multiIndex = [0, 0, 0]
+                    that.$apply()
+                    // console.log(that.multiArray)
+                }
+            },
+            fail: err => {
+                wx.hideLoading();
+                console.error(err)
+            }
+        })
+    }
+}
+</script>
+
+<template lang="wxml">
+    <form report-submit report-submit-timeout='777' @submit='formSubmit'>
+        <view class="paddingBox">
+            <view class="auditTitle">
+                <view></view>
+                <view>基本信息</view>
+            </view>
+            <view class="inputItemBox">
+                <view>头像</view>
+                <image src="{{avatarUrl}}" />
+            </view>
+            <view class="inputItemBox">
+                <view>姓名</view>
+                <input placeholder="请输入真实姓名" placeholder-style="font-size:28rpx;color:#999" name='userName'/>
+            </view>
+            <view class="inputItemBox">
+                <view>店铺名</view>
+                <input placeholder="请输入店铺名称" placeholder-style="font-size:28rpx;color:#999" name='shopName'/>
+            </view>
+            <view class="inputItemBox">
+                <view>公司地址</view>
+                <input placeholder="请输入公司地址" placeholder-style="font-size:28rpx;color:#999" name='companyAddress' value="{{companyAddress}}"/>
+            </view>
+            <view class="inputItemBox">
+                <view>你的职业</view>
+                <view class="selectMess">
+                    <picker mode="multiSelector" value="{{multiIndex1}}" range="{{occupationArray}}" @change="bindMulti1PickerChange" @columnchange="bindMulti1PickerColumnChange" range-key="label">
+                        <view wx:if='{{!showSelectCity1}}'>请选择</view>
+                        <view wx:else style="color:#000;font-weight:normal">
+                            {{occupationArray[0][multiIndex1[0]].label}} {{occupationArray[1][multiIndex1[1]].label}}
+                        </view>
+                    </picker>
+                    <image src="../images/runin_icon@2x.png" />
+                </view>
+            </view>
+            <view class="inputItemBox">
+                <view>从业年限</view>
+                <view class="selectMess">
+                    <picker @change="bindDateChange" mode="date" fields='year' value="{{timeValue}}" start='1949' end='{{currentYear}}' class="{{yearSelect?'occupationInitialSelect':''}}" name='workYear'>
+                        <view wx:if='{{!showSelectCity2}}'>请选择</view>
+                        <view wx:else style="color:#000;font-weight:normal">
+                            {{timeValue}}年 -- 至今
+                        </view>
+                    </picker>
+                    <image src="../images/runin_icon@2x.png" />
+                </view>
+            </view>
+            <view class="inputItemBox">
+                <view>身份证</view>
+                <input placeholder="请输入你的身份证号码" placeholder-style="font-size:28rpx;color:#999" name='IDCard' type="idcard"/>
+            </view>
+            <view class="inputItemBox">
+                <view>收费标准</view>
+                <view class="chargingStandardBox">
+                    <input type="number" name='minimumPrice' placeholder="最低价" placeholder-style="font-size:26rpx;color:#999"/>
+                    <view> ~ </view>
+                    <input type="number" name='highestPrice' placeholder="最高价" placeholder-style="font-size:26rpx;color:#999"/>
+                </view>
+            </view>
+            <!-- 手机号 -->
+            <view class="inputItemBox">
+                <view>手机号</view>
+                <view class="phoneVerification">
+                    <input type="number" maxlength="11" placeholder='请输入你的手机号' name='phoneNum' bindinput='phoneInput'/>
+                    <view @tap="getSms">获取验证码</view>
+                </view>
+            </view>
+            <view class="inputItemBox" wx:if='{{verificationShow}}'>
+                <view>验证码</view>
+                <input placeholder="请输入手机验证码" placeholder-style="font-size:28rpx;color:#999" name='verificationCode' value="{{verificationCode}}"/>
+            </view>
+        </view>
+        <view class="shadowLine"></view>
+        <view class="paddingBox" style="{{textareaShow?'padding-bottom:15rpx;':''}}">
+            <view class="auditTitle">
+                <view></view>
+                <view>获奖荣誉</view>
+            </view>
+            <view class="inputItemBox">
+                <view>{{textareaData}}</view>
+                <view @tap="editTextarea" class="editTextarea">{{editTextareaContant}}</view>
+            </view>
+            <!-- 获奖荣誉输入 -->
+            <textarea bindinput="bindTextAreaInput" placeholder="请输入你的获奖荣誉记录" value='{{textareaValue}}' name='textareaValue' wx:if='{{textareaShow}}'/>
+        </view>
+        <!-- 提交按钮 -->
+        <view class="submitBox">
+            <button @tap='backPage'>取消</button>
+            <button form-type="submit">确定</button>
+        </view>
+    </form>
+</template>
+
+<style lang="less">
+    page{
+        border-top: 1rpx solid rgb(236, 235, 235);
+        background-color: #eee;
+        padding-bottom: 45rpx;
+    }
+    .paddingBox{
+        background-color: #fff;
+        width: 100%;
+        padding: 0 34rpx;
+        // padding-bottom: 10rpx;
+        .auditTitle{
+            width: 100%;
+            padding: 15rpx 0rpx 25rpx 0rpx;
+            display: flex;
+            align-items: center;
+            view:first-of-type{
+                background-color: #6e68be;
+                height: 36rpx;
+                width: 6rpx;
+            }
+            view:last-of-type{
+                font-size: 30rpx;
+                font-weight: bold;
+                margin-left: 15rpx;
+                height: 36rpx;
+                line-height: 36rpx;
+            }
+        }
+        textarea{
+            margin-top: 15rpx;
+            width: 100%;
+            padding: 20rpx 0rpx;
+            height: 148rpx;
+            border: 1rpx solid rgb(240, 240, 240);
+        }   
+    }
+    .submitBox{
+        width: 100%;
+        display: flex;
+        justify-content: space-around;
+        padding-top: 45rpx;
+        button{
+            width: 230rpx;
+            height: 60rpx;
+            line-height: 60rpx;
+        }
+        button:first-of-type{
+            background-color: #fff;
+            border: 1rpx solid #6483b1;
+            color: #6483b1;
+            font-size: 30rpx;
+        }
+        button:last-of-type{
+            background-color: #6483b1;
+            border: 1rpx solid #6483b1;
+            color: #fff;
+            font-size: 30rpx;
+        }
+    }
+</style>

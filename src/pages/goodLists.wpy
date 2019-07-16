@@ -1,0 +1,145 @@
+<script>
+import wepy from 'wepy';
+import api from '../api/api'
+import { request } from '../utils/request'
+import topSearch from '../compontens/topSearch'
+import filterBtns from '../compontens/subComponents/filterBtns'
+export default class goodLists extends wepy.page {
+    config = {};
+    components = {
+        topSearch,
+        filterBtns
+    };
+
+    data = {
+        recommend:null,
+        caseClass:null,
+        stars: [0, 1, 2, 3, 4],
+        normalSrc: 'https://img.zhizubaba.com/jBjH445aq0u0QbmvX1qITvCEOsjtYcynGcgHRVQ8.png',
+        selectedSrc: 'https://img.zhizubaba.com/YAH2TyGehe8AA0dRBLOqkuLMTavWBCxAqpMiuyIH.png',
+        classTitle:'',
+        cate_id:'',
+        page:1,
+        cartNums:0,
+    };
+    methods = {
+        goDetails(goodsId){
+            wx.navigateTo({
+                url: `./goodDetails?goodsId=${goodsId}`
+            })
+        }
+    };
+
+    events = {
+        userSelectClass:(userSelectArray)=>{
+            // console.log(userSelectArray)
+            let brand_id = '', // 品牌id
+                style_id = '',  //风格id
+                top_material_id = '',  //顶级材料id
+                base_material_id = ''; //基础材料id
+            userSelectArray.forEach(element => {
+                if(element.classIndex == 0){
+                    brand_id += `${element.id},`
+                }else if (element.classIndex == 1){
+                    style_id += `${element.id},`
+                }else if (element.classIndex == 2){
+                    top_material_id += `${element.id},`
+                }else if (element.classIndex == 3){
+                    base_material_id += `${element.id},`
+                }
+            });
+            this.getGoodsList(this.cate_id,brand_id,style_id,top_material_id,base_material_id)
+        }
+    };
+    onLoad(options) {
+        this.classTitle = options.name
+        this.cate_id = options.cate_id
+        // 获取顶部筛选选项
+        this.getAttributes()
+        // 获取商品数据
+        this.getGoodsList(options.cate_id)
+    };
+    onShow(){
+        this.cartNums = wx.getStorageSync('cartNums')
+    }
+    // 获取顶部筛选选项
+    getAttributes(){
+        let url = api.getAttributes;
+        let data = {
+            type:'1' //1 聚购物 2 聚案例 3聚心得 话题
+        };
+        request(url,"GET",data).then(result=>{
+            wx.hideLoading();
+            // 获取品牌列表 
+            request(api.get_brands,'GET',{ cete_id: this.cate_id}).then(res=>{
+                result.data.message[0].children = res.data.message
+                this.caseClass = result.data.message
+                this.$apply()
+            })
+        })
+    }
+    // 获取商品数据
+    getGoodsList(cate_id,brand_id,style_id,top_material_id,base_material_id){
+        let url = api.goodList;
+        let data = {
+            page: this.page,
+            cate_id : cate_id
+        };
+        if(brand_id) data.brand_id = brand_id.slice(0,brand_id.length-1)
+        if(style_id) data.style_id = style_id.slice(0,style_id.length-1)
+        if(top_material_id) data.top_material_id = top_material_id.slice(0,top_material_id.length-1)
+        if(base_material_id) data.base_material_id = base_material_id.slice(0,base_material_id.length-1)
+        request(url,"GET",data).then(res=>{
+            wx.hideLoading();
+            res.data.message.data.forEach(element => {
+                element.market = Number(element.market/100).toFixed(2)
+                element.price = Number(element.price/100).toFixed(2)
+            });
+            this.recommend = res.data.message
+            this.$apply()
+        })
+    }
+}
+</script>
+
+<template lang="wxml">
+    <topSearch class="searchBox" :cartNums.sync="cartNums"/>
+    <filterBtns :caseClass.sync="caseClass"/>
+    <view class="classificationTitle" wx:if='{{recommend.data.length}}'>{{classTitle}}</view>
+    <!-- 品种 -->
+    <view class="goodsCategoryBox" wx:if='{{recommend.data.length}}'>
+        <view class="goodsCategoryItem activeBox recommend" wx:for='{{recommend.data}}' wx:key='' @tap='goDetails({{item.id}})'>
+            <image src='{{item.cover_picture}}'/>
+            <view class="activePriceBox">
+                <view class="title">{{item.name}}</view>
+                <view class="brand">{{item.affiliated_name}}</view>
+                <view class="sell"><text>￥{{item.price}}</text><text class="throughLine">￥{{item.market}}</text></view>
+                <!-- <view>******(5)</view> -->
+                <view class="star-wrap">
+                    <view class="star">
+                        <view class = 'startBox'>
+                            <block wx:for="{{stars}}" wx:key='idx'  wx:for-item="itemName">
+                                <image class="star-image" style="left: {{itemName*30}}rpx;" src="{{item.customer_rating > itemName ?selectedSrc : normalSrc}}">
+                                    <view class="item" style="left:0rpx" data-key="{{itemName+0.5}}"></view>
+                                    <view class="item" style="left:25rpx" data-key="{{itemName+1}}"></view>
+                                </image>
+                            </block>
+                        </view>
+                    </view>
+                    <view style="font-size:26rpx;transform: translateY(-4rpx)">({{item.customer_rating}})</view>
+                </view>
+            </view>
+            <image class="hostSellIcon" src="../images/jgw_rm.png"/>
+        </view>
+    </view>
+    <view class="noBQ" wx:else style="padding-top:167rpx">
+        <image src="../images/kbq.png" />
+        <view>非常抱歉，暂无相关商品</view>
+    </view>
+</template>
+
+<style lang="less">
+    .classificationTitle{
+        border-top: 1rpx solid rgb(226, 224, 224);
+    }
+</style>

@@ -1,0 +1,104 @@
+<template lang="wxml">
+    <!-- 筛选条件按钮组件 -->
+    <filterBtns :caseClass.sync="caseClass"/>
+    <!-- 案例展示 -->
+    <view class='screenImgBox' wx:if='{{allData.data.length}}'>
+        <block wx:for='{{allData.data}}' wx:key=''>
+            <image  src='{{item.cover}}' @tap='clckScreenImg({{item}})'/>
+        </block>
+    </view>
+    <view wx:else class="noBQ" style="padding-top:165rpx">
+        <image src="../images/kbq.png" />
+        <view>非常抱歉，没有找到相关案例</view>
+    </view>
+</template>
+
+<script>
+import wepy from 'wepy';
+import filterBtns from './subComponents/filterBtns'
+import api from '../api/api'
+import { request } from '../utils/request'
+
+export default class caseTab extends wepy.component {
+    components = {
+        filterBtns
+    }
+    data = {
+        allData:null,
+    };
+    
+    methods = {
+        clckScreenImg(item_){
+            // console.log(item_)
+            let item = JSON.stringify(item_)
+            wx.navigateTo({
+                url: `./caseDetails?item=${item}`
+            })
+        },
+    };
+    
+    events = {
+        currentTab:(idx)=>{
+            if(idx == 1){
+                this.caseLists()
+            }
+        },
+        userSelectClass:(userSelectArray)=>{
+            let rooms_id  = '',
+                style_id  = '',
+                budget_id = '',
+                area_id = '';
+            userSelectArray.forEach(element => {
+                if(element.classIndex == 0){
+                    rooms_id += `${element.id},`
+                }else if (element.classIndex == 1){
+                    style_id += `${element.id},`
+                }else if (element.classIndex == 2){
+                    budget_id += `${element.id},`
+                }else if (element.classIndex == 3){
+                    area_id += `${element.id},`
+                }
+            });
+            this.caseLists(rooms_id,style_id,budget_id,area_id)
+        }
+    };
+    caseLists(rooms_id,style_id,budget_id,area_id){
+        let data = {};
+        if(rooms_id) data.rooms_id = rooms_id.slice(0,rooms_id.length-1)
+        if(style_id) data.style_id = style_id.slice(0,style_id.length-1)
+        if(budget_id) data.budget_id = budget_id.slice(0,budget_id.length-1)
+        if(area_id) data.area_id = area_id.slice(0,area_id.length-1)
+        request(api.photos,'GET',data).then(res=>{
+            wx.hideLoading();
+            this.allData = res.data.message
+            this.$apply()
+        })
+    }
+    props = {
+        syncData: {
+            type: Object,
+            default: 'null'
+        },
+        caseClass: {
+            type: Array,
+            default: 'null'
+        }
+    };
+}
+</script>
+
+<style lang="less">
+    .screenImgBox{
+        width: 100%;
+        padding: 0 6rpx 12rpx 6rpx;
+        display: flex;
+        flex-direction:row;
+        flex-wrap: wrap;
+        justify-content:space-between;
+        image{
+            width: 49.6%;
+            height: 366rpx;
+            margin-bottom: 6rpx;
+        }
+    }
+</style>

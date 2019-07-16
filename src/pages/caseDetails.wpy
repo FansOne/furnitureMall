@@ -1,0 +1,197 @@
+<script>
+import wepy from 'wepy';
+import api from '../api/api'
+import { request,toast,collects } from '../utils/request'
+
+export default class caseDetails extends wepy.page {
+    config = {
+        navigationBarTitleText: '',
+        disableScroll:true,
+    };
+    components = {};
+
+    data = {
+        allData:null,
+        rotationAngle: 0,
+        maskHidden:false,
+        imagePath:'',
+        labelBg:false,
+    };
+    methods = {
+        clickLable(good_id){
+            this.allData.label.forEach(element => {
+                if(element.good_id == good_id){
+                    element.labelBg = true
+                }else{
+                    element.labelBg = false
+                }
+            });
+            wx.navigateTo({
+                url: `./caseSwiperDetails?id=${this.allData.id}&goods_id=${good_id}`
+            });
+        },
+        //收藏
+        collects(id,cover){
+            wx.navigateTo({
+                url: `./saveIdeaBook?id=${id}&cover=${cover}&type=3`
+            });
+        }
+    };
+
+    events = {};
+    onReady(e) {
+        // 加速计---实现重力感应
+        wx.startAccelerometer({
+            interval:'ui',
+            success:()=>{
+                wx.onAccelerometerChange((res)=>{
+                    if(res.x>0.2){                         //Y轴平移
+                        this.transformX += 5
+                        this.rotationAngle = -60
+                    }else if(res.x<0){
+                        this.transformX -= 5
+                        this.rotationAngle = 60
+                    }else if(0.2>res.x>0){
+                        this.transformX = 0
+                        this.rotationAngle = 0
+                    }
+                    this.$apply()
+                    if (this.transformX > 12) {                //限定X边界
+                        this.transformX -= 2;
+                    }else if (this.transformX < -12) {
+                        this.transformX += 2;
+                    }
+                    this.$apply()
+                })
+            }
+        })
+    }
+    onLoad(options) {
+        this.allData = JSON.parse(options.item)
+        // 3秒后白色背景消失
+        setTimeout(() => {
+            this.labelBg = true;
+            this.$apply()
+        }, 3000);
+    };
+    
+}
+</script>
+
+<template lang="wxml">
+    <view class="testbox" style="background-image: url('{{allData.cover}}')">
+        <view class="rightTopBtnBox">
+            <button><image src="../images/bq_diy_icon.png" /></button>
+            <button><image src="../images/bq_share_icon.png" /></button>
+        </view>
+        <view wx:for='{{allData.label}}' wx:key='' class="labelBox {{labelBg?'labelBg':''}} {{item.labelBg?'labelBgClick':''}}" style="left:{{item.x}}rpx;top:{{item.y}}rpx" @tap='clickLable({{item.good_id}})'>
+            <image src="../images/bq_tab_icon.png" style="transition: transform .5s linear;transform:rotate({{rotationAngle}}deg)"/>
+        </view>
+        <!-- 底部 -->
+        <view class="bottomFunctionBox">
+            <view class="more_left">
+                <image src="../images/bq_more_icon.png" />
+                <view>更多</view>
+            </view>
+            <view class="collection_right" @tap='collects({{allData.id}},{{allData.cover}})'>
+                <image src='../images/home_sec_icon.png'/>
+                <view>收藏</view>
+            </view>
+        </view>
+    </view>
+</template>
+
+<style lang="less">
+    page{
+        height: 100%;
+    }
+    .testbox{
+        width: 100%;
+        height: 100%;
+        background-size: 100% 100%;
+        background-repeat: no-repeat;
+    }
+    .rightTopBtnBox{
+        width: 100%;
+        padding-top: 25rpx;
+        padding-right: 10rpx;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        button{
+            padding: 0 20rpx;
+            background-color: rgba(0, 0, 0, 0);
+            image{
+                width: 50rpx;
+                height: 50rpx;
+            }
+        }
+        button:first-of-type{
+            image{
+                width: 57rpx;
+            }
+        }
+    }
+    .labelBox{
+        position: absolute;
+        width: 90rpx;
+        height: 90rpx;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: rgba(255, 255, 255, .3);
+        border-radius: 50%;
+        transition: background-color .4s ease-out;
+        image{
+            width: 50rpx;
+            height: 70rpx;
+        }
+    }
+    .labelBg{
+        background-color: rgba(0, 0, 0, 0);
+    }
+    .labelBgClick{
+        background-color: rgba(255, 255, 255, .3) !important;
+    }
+    .bottomFunctionBox{
+        width: 100%;
+        height: 110rpx;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        padding: 0 30rpx 30rpx 30rpx;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        .more_left,.collection_right{
+            display: flex;
+            align-items: center;
+            image{
+                width: 50rpx;
+                height: 50rpx;
+            }
+            view{
+                color: #fff;
+                font-size: 34rpx;
+            }
+        }
+        .more_left{
+            view{
+                font-size: 36rpx;
+                padding-left: 15rpx;
+            }
+        }
+        .collection_right{
+            width: 200rpx;
+            height: 80rpx;
+            background-color: #6483b1;
+            border-radius: 10rpx;
+            padding: 0 25rpx;
+            justify-content: space-around;
+            image{
+                width: 40rpx;
+                height: 40rpx;
+            }
+        }
+    }
+</style>

@@ -1,0 +1,196 @@
+<template lang="wxml">
+    <swiper indicator-dots autoplay interval="4000" circular style="heigth:300rpx" hidden="{{hiddenBanner}}">
+        <block wx:for="{{imgUrls}}" wx:key="">
+            <swiper-item>
+                <image src="{{item.img_src}}" class="slide-image" style="height:100%;width:100%" @tap ='navigateOtherPage({{item}})'/>
+            </swiper-item>
+        </block>
+    </swiper>
+    <!-- 标题分类 -->
+    <view class="classificationTitle" wx:if='{{pageShow}}'>{{goodsClassName}}</view>
+    <!-- 商品分类 -->
+    <view class="goodsCategoryBox" wx:if='{{pageShow}}'>
+        <view class="goodsCategoryItem" wx:for='{{message}}' wx:key='' @tap='categoryItem({{item}})'>
+            <image src='{{item.icon}}' />
+            <view>{{item.name}}</view>
+        </view>
+    </view>
+    <view class="classificationTitle" wx:if='{{recommendedGoods.length!=0}}'>新品推荐</view>
+    <!-- 新品推荐 -->
+    <view class="goodsCategoryBox">
+        <view class="goodsCategoryItem" wx:for='{{recommendedGoods}}' wx:key='' style="padding-top:10rpx">
+            <image src='{{item.cover_picture}}' />
+            <view class="price" style="margin-top:10rpx;">
+                <view>￥{{item.price}}</view>
+                <image src="../images/标签.png" style='transform: translateY(4rpx)'/>
+            </view>
+        </view>
+    </view>
+    <view class="classificationTitle" wx:if='{{activity.length!=0}}'>本月活动</view>
+    <!-- 本月活动 -->
+    <view class="goodsCategoryBox">
+        <view class="goodsCategoryItem activeBox" wx:for='{{activity}}' wx:key=''>
+            <image src='{{item.cover_picture}}'/>
+            <view class="activePriceBox"><view class="title">{{item.name}}</view><view class="sell">{{item.price}}</view></view>
+            <image class="hostSellIcon" src="../images/jgw_rm.png"/>
+        </view>
+    </view>
+    <view class="classificationTitle" wx:if='{{recommend.length!=0 && pageShow}}'>为您推荐</view>
+    <!-- 为您推荐 -->
+    <view class="goodsCategoryBox" wx:if='{{pageShow}}'>
+        <view class="goodsCategoryItem activeBox recommend" wx:for='{{recommend}}' wx:key='' @tap='goDetails({{item.id}},{{item.cover_picture}})'>
+            <image src='{{item.cover_picture}}'/>
+            <view class="activePriceBox">
+                <view class="title">{{item.name}}</view>
+                <view class="brand">{{item.affiliated_name}}</view>
+                <view class="sell"><text>￥{{item.price}}</text><text class="throughLine">￥{{item.market}}</text></view>
+                <!-- <view>******(5)</view> -->
+                <view class="star-wrap">
+                    <view class="star">
+                        <view class = 'startBox'>
+                            <block wx:for="{{stars}}" wx:key='idx' wx:for-item='itemStar'>
+                                <image class="star-image" style="left: {{itemStar*30}}rpx;" src="{{item.customer_rating > itemStar ?selectedSrc : normalSrc}}">
+                                    <view class="item" style="left:0rpx" data-key="{{itemStar+0.5}}"></view>
+                                    <view class="item" style="left:25rpx" data-key="{{itemStar+1}}"></view>
+                                </image>
+                            </block>
+                        </view>
+                    </view>
+                    <view style="font-size:26rpx;transform: translateY(-4rpx)">({{item.customer_rating}})</view>
+                </view>
+            </view>
+            <image class="hostSellIcon" src="../images/jgw_rm.png"/>
+        </view>
+    </view>
+</template>
+
+<script>
+import wepy from 'wepy';
+import api from '../api/api'
+import { request,toast } from '../utils/request'
+
+export default class shoppingTab extends wepy.component {
+    components = {};
+
+    data = {
+        imgUrls:[],
+        hiddenBanner:false,
+        goodsClassName:'商品分类',
+        message: [],
+        recommendedGoods:[],
+        activity:[],
+        recommend:[],
+        stars: [0, 1, 2, 3, 4],
+        normalSrc: 'https://img.zhizubaba.com/jBjH445aq0u0QbmvX1qITvCEOsjtYcynGcgHRVQ8.png',
+        selectedSrc: 'https://img.zhizubaba.com/YAH2TyGehe8AA0dRBLOqkuLMTavWBCxAqpMiuyIH.png',
+        pageShow:false
+    };
+    methods = {
+        // 点击广告页面跳转
+        navigateOtherPage(item){
+            console.log(item)
+            toast(item.src)
+        },
+        categoryItem(goodItem){        //商品分类跳转
+            // console.log(goodItem)
+            if(goodItem.children){
+                let cateUrl = api.goodCates,
+                cateData = {
+                    parent_id:goodItem.id
+                };
+                request(cateUrl,"GET",cateData).then(res=>{
+                    wx.hideLoading();
+                    this.message = res.data.message
+                    this.goodsClassName = goodItem.name
+                    this.hiddenBanner = true
+                    this.$apply()
+                })
+            }else{
+                if(this.hiddenBanner){
+                    wx.navigateTo({
+                        url: `./goodLists?cate_id=${goodItem.id}&name=${goodItem.name}`
+                    })
+                }
+            }   
+        },
+        // ‘为你推荐’跳转商品详情
+        goDetails(goodsId,cover){
+            wx.navigateTo({
+                url: `./goodDetails?goodsId=${goodsId}&cover=${cover}`
+            });
+        },
+    };
+
+    events = {
+        currentTab:(idx)=>{
+            if(idx == 2){
+                //获取商品分类&新品推荐&本月活动&为你推荐
+                this.goodsClassName = '商品分类'
+                this.hiddenBanner = false
+                this.promiseAllData()
+            }
+        }
+    };
+
+    props = {
+        syncData: {
+            type: Object,
+            default: 'null'
+        },
+        goodItem: {
+            type: Object,
+            default: 'null'
+        },
+    };
+    //获取商品分类&新品推荐&本月活动&为你推荐
+    promiseAllData(){
+        let cateUrl = api.goodCates,
+            cateData = {
+                parent_id:0
+            },
+            recommendedActivitiesUrl = api.recommendedActivities,
+            recommendedData = {
+                type:1 //1新品 2本月活动
+            },
+            activitiesData = {
+                type:2 //1新品 2本月活动
+            },
+            recommendedGoodsUrl = api.recommendedGoods;
+        
+        let getCate = request(cateUrl,"GET",cateData);      //获取商品分类数据
+        let recommendedGoods = request(recommendedActivitiesUrl,"GET",recommendedData);     //获取新品推荐数据
+        let activitieMonth = request(recommendedActivitiesUrl,"GET",activitiesData);      //获取本月活动数据
+        let youEcommended = request(recommendedGoodsUrl);   //获取为你推荐数据
+        let get_ads = request(api.get_ads,'GET',{ type:1 }); //聚购物轮播广告
+        
+        Promise.all([getCate,recommendedGoods,activitieMonth,youEcommended,get_ads]).then(result=>{
+            wx.hideLoading();
+            result[1].data.message.forEach(element => {
+                element.price = (element.price/100).toFixed(2)
+            });
+            result[2].data.message.forEach(element => {
+                element.price = (element.price/100).toFixed(2)
+            });
+            result[3].data.message.forEach(element => {
+                element.price = (element.price/100).toFixed(2)
+                element.market = (element.market/100).toFixed(2)
+            });
+            let getCate = result[0].data.message;   //商品分类数据
+            let recommendedGoods = result[1].data.message;   //新品推荐数据
+            let activitieMonth = result[2].data.message;   //本月活动数据
+            let recommend = result[3].data.message;     //为你推荐数据
+            this.message = getCate
+            this.recommendedGoods = recommendedGoods
+            this.activity = activitieMonth
+            this.recommend = recommend
+            this.imgUrls = result[4].data.message
+            // console.log(recommend)
+            this.pageShow = true
+            this.$apply()
+        })
+    }
+}
+</script>
+
+<style lang="less">
+</style>

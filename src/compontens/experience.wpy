@@ -1,0 +1,121 @@
+<template lang="wxml">
+    <view class="experienceTop">
+        <view class="experienceLeft">
+            <!-- 筛选条件按钮组件 -->
+            <filterBtns :caseClass.sync="caseClass"/>
+        </view>
+        <!-- 最新消息 -->
+        <view class="experienceRight">
+            <image src="../images/jxd_new.png" />
+            <view>最新消息</view>
+        </view>
+    </view>
+    <!-- 心得列表 -->
+    <view class="experienceListBox" wx:if='{{experienceList.length}}'>
+        <view class='experienceListFor' wx:for='{{experienceList}}' wx:key='' @tap='goExperienceDetails({{item.id}})'>
+            <image class="experienceCover" src="{{item.cover}}" />
+            <view class="experienceIntroduce">
+                <view class="experienceTitle">{{item.title}}</view>
+                <view class="experienceUserOperation">
+                    <image src="{{item.icon}}" />
+                    <view class="experienceCommentNumBox">
+                        <view>{{item.review}}评论</view>
+                        <view>{{item.zan}}赞</view>
+                    </view>
+                </view>
+            </view>
+        </view>
+    </view>
+    <view class="noBQ" wx:else style="padding-top:167rpx">
+        <image src="../images/kbq.png" />
+        <view>非常抱歉，暂无相关消息</view>
+    </view>
+</template>
+
+<script>
+import wepy from 'wepy';
+import filterBtns from './subComponents/filterBtns'
+import api from '../api/api'
+import { request,toast,collects } from '../utils/request'
+export default class experience extends wepy.component {
+    components = {
+        filterBtns
+    };
+
+    data = {
+        experienceList:[],
+    };
+    methods = {
+        goExperienceDetails(id){
+            wx.navigateTo({
+                url: `./experienceDetailsFirst?id=${id}`
+            })
+        }
+    };
+
+    events = {
+        currentTab:(idx)=>{
+            if(idx == 4){
+                this.forums()
+            }
+        },
+        userSelectClass:(userSelectArray)=>{
+            let attributes_id  = '';
+            userSelectArray.forEach(element => {
+                if(element.classIndex == 0){
+                    attributes_id += `${element.id},`
+                }
+            });
+            this.forums(attributes_id)
+        }
+    };
+    // 获取心得列表
+    forums(attributes_id){
+        let url = api.forums;
+        let data = {};
+        if(attributes_id) data.attributes_id = attributes_id.slice(0,attributes_id.length-1)
+        request(url,'GET',data).then(res=>{
+            wx.hideLoading();
+            this.experienceList = res.data.message.data
+            this.$apply()
+        })
+    }
+    props = {
+        syncData: {
+            type: Object,
+            default: 'null'
+        },
+        caseClass: {
+            type: Array,
+            default: 'null'
+        }
+    };
+}
+</script>
+
+<style lang="less">
+    .experienceTop{
+        display: flex;
+        align-items: center;
+        position: relative;
+        .experienceLeft{
+            width: 100%;
+        }
+        .experienceRight{
+            z-index: 1;
+            position: absolute;
+            right: 25rpx;
+            top: 30rpx;
+            flex: 1;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            image{
+                margin-right: 12rpx;
+                width: 30rpx;
+                height: 30rpx;
+            }
+        }
+    }
+</style>

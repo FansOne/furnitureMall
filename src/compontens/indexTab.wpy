@@ -1,0 +1,373 @@
+<template lang="wxml">
+    <view class='functionTabBox'>
+        <button class='functionTabItem' open-type='getUserInfo' @getuserinfo="onGotUserInfo">
+            <image src='../images/home_bq_icon.png'/>
+            <view>便签</view>
+        </button>
+        <view wx:if='{{openSetting}}' class='functionTabItem' @tap='goCamera'>
+            <image src='../images/home_cam_icon.png'/>
+            <view>相机</view>
+        </view>
+        <button hidden='{{openSetting}}' class='functionTabItem openSetting_' open-type="openSetting" @opensetting="callback">
+            <image src='../images/home_cam_icon.png'/>
+            <view>相机</view>
+        </button>
+        <view class='functionTabItem' @tap="DIYPage">
+            <image src='../images/home_diy_icon.png'/>
+            <view>DIY</view>
+        </view>
+    </view>
+    <view class='shadowLine'></view>
+    <!-- 家居购物 -->
+    <view class='homeFurnishingBox'>
+        <view class='homeFurnishingTitle'>家居购物</view>
+        <scroll-view scroll-x>
+            <block wx:for='{{homeFurnishing}}' wx:key=''>
+                <image src='{{item.cover}}' @tap='goodsDetails({{item.id}},{{item.cover}})'/>
+            </block>
+        </scroll-view>
+    </view>
+    <view class='shadowLine'></view>
+    <!-- 专业人士帮您装修 -->
+    <view class='homeFurnishingBox'>
+        <view class='homeFurnishingTitle'>专业人士帮您装修</view>
+        <scroll-view scroll-x style='height:180rpx'>
+            <block wx:for='{{helpRenovation}}' wx:key=''>
+                <image src='{{item.cover}}' style='height:180rpx' @tap='severDetails({{item.id}})'/>
+            </block>
+        </scroll-view>
+    </view>
+    <!-- 聚案例 -->
+    <view class='renovationEffectBox' wx:for='{{renovationEffect}}' wx:key=''>
+        <view class='renovationEffectItem'>
+            <view class='renovationEffectItem_title'>
+                <image src='../images/home_beiou_icon.png'/>
+                <view>{{item.roomName}}</view>
+            </view>
+            <image class='renovationEffectImg' src='{{item.cover}}' @tap='goCaseDetails({{item}})'>
+                <view class='bianqianBox'>
+                    <image src='../images/home_tab_icon.png'/>
+                    <view>{{item.num}}</view>
+                </view>
+            </image>
+            <!-- 分享及收藏 -->
+            <view class='share_collectionBox'>
+                <button open-type='share' data-img='{{item.cover}}' data-title='{{item.roomName}}'><image src='../images/home_share_icon.png'/>分享</button>
+                <button @tap="collects({{item.id}},{{item.cover}})"><image src='../images/home_sec_icon.png'/>收藏</button>
+            </view>
+        </view>
+    </view>
+    <!-- 聚心得 -->
+    <view class='renovationEffectBox'>
+        <view class='renovationEffectItem'>
+            <view class='renovationEffectItem_title'>
+                <image src='../images/home_talk_icon.png'/>
+                <view>聚心得</view>
+            </view>
+            <image class='renovationEffectImg' src='{{communication.cover}}'>
+                <view class='communicationMask'>
+                    <view>{{communication.title}}</view>
+                </view>
+            </image>
+            <!-- 查看交流心得 -->
+            <view class='share_collectionBox' style='padding:20rpx 50rpx 0 50rpx'>
+                <button class='communicationBtn' @tap='goExperience'>查看交流心得</button>
+            </view>
+        </view>
+    </view>
+</template>
+
+<script>
+import wepy from 'wepy';
+import api from '../api/api'
+import { request,toast,collects } from '../utils/request'
+
+export default class indexTab extends wepy.component {
+    components = {};
+
+    data = {
+        homeFurnishing:[],
+        helpRenovation:[],
+        renovationEffect:[],
+        communication:null,
+        openSetting:true
+    };
+    methods = {
+        onGotUserInfo(e){
+            if(e.detail.errMsg == 'getUserInfo:ok'){
+                let userMess = e.detail.userInfo;
+                let data = {};
+                // TODO
+                let url = api.userOne;
+
+                data.nickName = userMess.nickName
+                data.gender = userMess.gender       //userInfo.gender 性别 0：未知、1：男、2：女
+                data.avatarUrl = userMess.avatarUrl
+                if(userMess.province && userMess.city) data.address = `${userMess.province}${userMess.city}`
+                
+                request(url,"PUT",data).then(res=>{
+                    wx.hideLoading();
+                    if(res.data.status == 200){
+                        wx.navigateTo({
+                            url: './mine'
+                        })
+                    }else{
+                        toast(res.data.message||'服务器数据异常')
+                    }
+                })
+            }
+        },
+        goCamera(){
+            wx.getSetting({
+                success:(res)=> {
+                    if (!res.authSetting['scope.camera']) {
+                        wx.authorize({
+                            scope: 'scope.camera',
+                            success:(res)=> {
+                                wx.navigateTo({
+                                    url: `./camera?route=index`
+                                })
+                            },
+                            fail:(res)=> {
+                                // console.log('----fail----'+res.errMsg)
+                                this.openSetting = false;
+                                this.$apply()
+                            }
+                        })
+                    }else{
+                        wx.navigateTo({
+                            url: `./camera?route=index`
+                        })
+                    }
+                }
+            })
+        },
+        callback(res){
+            if(res.detail.authSetting['scope.camera']){ //已授权
+                wx.navigateTo({
+                    url: `./camera?route=index`,
+                    success:()=>{
+                        this.openSetting = true;
+                        this.$apply()
+                    }
+                })
+            }
+        },
+        DIYPage(){
+            wx.navigateTo({
+                url: './DIY'
+            })
+        },
+        // 跳转聚心得Tab
+        goExperience(){
+            this.$emit('tabJump', 4)
+        },
+        // 跳转商品详情
+        goodsDetails(goodsId,cover){
+            wx.navigateTo({
+                url: `./goodDetails?goodsId=${goodsId}&cover=${cover}`
+            });
+        },
+        // 跳转案例详情
+        goCaseDetails(item_){
+            let item = JSON.stringify(item_)
+            wx.navigateTo({
+                url: `./caseDetails?item=${item}`
+            })
+        },
+        // 服务详情
+        severDetails(id){
+            wx.navigateTo({
+                url: `./serviceDetails?id=${id}`
+            });
+        },
+        //收藏
+        collects(id,cover){
+            wx.navigateTo({
+                url: `./saveIdeaBook?id=${id}&cover=${cover}&type=3`
+            });
+        },
+    };
+    events = {
+        currentTab:(idx)=>{
+            if(idx == 0){
+                request(api.homeDate).then(res=>{
+                    wx.hideLoading();
+                    this.homeFurnishing = res.data.message.goods
+                    this.helpRenovation = res.data.message.works
+                    this.renovationEffect = res.data.message.photos
+                    this.communication = res.data.message.forums
+                    this.$apply()
+                    wx.setStorageSync('cartNums', res.data.message.carts_num);
+                    this.$emit('cartNums',res.data.message.carts_num)
+                })
+            }
+        }
+    };
+
+    props = {
+        syncData: {
+            type: Object,
+            default: 'null'
+        }
+    };
+}
+</script>
+
+<style lang="less">
+    .functionTabBox{
+        display: flex;
+        justify-content: space-between;
+        width: 100%;
+        box-sizing: border-box;
+        padding: 28rpx 30rpx 20rpx 30rpx;
+        align-items: center;
+        .functionTabItem{
+            display: flex;
+            align-items: center;
+            image{
+                width: 38rpx;
+                height: 32rpx;
+                margin-right: 10rpx;
+            }
+            view{
+                font-size: 30rpx;
+                color: #666;
+            }
+        }
+    }
+    .homeFurnishingBox{
+        width: 100%;
+        padding: 30rpx 0 30rpx 30rpx;
+        .homeFurnishingTitle{
+            font-size: 34rpx;
+            color: #333;
+        }
+        scroll-view{
+            padding-top: 25rpx;
+            height: 260rpx;
+            width: 100%;
+            white-space: nowrap;
+            image{
+                width: 260rpx;
+                height: 260rpx;
+                margin-right: 15rpx;
+            }
+        }
+    }
+    .renovationEffectBox{
+        height: 850rpx;
+        width: 100%;
+        padding: 0 15rpx;
+        margin-bottom: 30rpx;
+        .renovationEffectItem{
+            height: 850rpx;
+            width: 100%;
+            padding: 30rpx 0;
+            box-shadow: 0 0 20rpx #dbd8d8;
+            border-radius: 10rpx;
+            .renovationEffectItem_title{
+                width: 100%;
+                display: flex;
+                align-items: center;
+                padding: 0 15rpx;
+                image{
+                    height: 37rpx;
+                    width: 37rpx;
+                    margin-right: 15rpx;
+                }
+                view{
+                    color: #333;
+                    font-size: 34rpx;
+                }
+            }
+            .renovationEffectImg{
+                position: relative;
+                margin-top: 30rpx;
+                height: 600rpx;
+                width: 100%;
+                .bianqianBox{
+                    position: relative;
+                    width: 80rpx;
+                    height: 80rpx;
+                    position: absolute;
+                    right: 45rpx;
+                    bottom: 55rpx;
+                    image{
+                        width: 80rpx;
+                        height: 80rpx;
+                    }
+                    view{
+                        width: 36rpx;
+                        height: 36rpx;
+                        background-color: #6483b1;
+                        border-radius: 50%;
+                        position: absolute;
+                        top: -12rpx;
+                        right: -15rpx;
+                        color: #fff;
+                        font-size: 24rpx;
+                        line-height: 36rpx;
+                        text-align: center;
+                    }
+                }
+            }
+            .share_collectionBox{
+                padding:20rpx 50rpx 0 50rpx;
+                display: flex;
+                width: 100%;
+                align-items: center;
+                justify-content: space-between;
+                button{
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    border: 1rpx solid #6483b1;
+                    width: 200rpx;
+                    height: 80rpx;
+                    background-color: rgba(0, 0, 0, 0);
+                    font-size: 34rpx;
+                    color: #6483b1;
+                    image{
+                        width: 37rpx;
+                        height: 37rpx;
+                        margin-right: 20rpx;
+                    }
+                }
+                button:nth-child(2){
+                    background-color: #6483b1;
+                    font-size: 34rpx;
+                    color: #fff;
+                }
+            }
+        }
+    }
+    .communicationBtn{
+        width: 100% !important;
+    }
+    .communicationMask{
+        width: 100%;
+        height: 600rpx;
+        position: absolute;
+        top: 0;
+        left: 0;
+        background-color: rgba(0, 0, 0, .4);
+        view{
+            margin-top: 130rpx;
+            padding: 0 25rpx;
+            font-size: 36rpx;
+            color: #fff;
+            text-align: center;
+        }
+    }
+    .openSetting_{
+        padding: 0;
+        background-color: #fff;
+        border-radius: 0rpx;
+        line-height: 0;
+        margin: 0rpx;
+    }
+    button{
+        background-color: #fff;
+    }
+</style>

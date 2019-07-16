@@ -1,0 +1,365 @@
+<script>
+import wepy from 'wepy';
+
+export default class myLike extends wepy.page {
+    config = {
+        navigationBarTitleText: '',
+        disableScroll:true
+    };
+    components = {};
+
+    data = {
+        inputValue:null,
+        shutShow:false,
+        invitationPopup:false,
+    };
+    methods = {
+        // 邀请协作弹窗显示
+        invitationOtherUser(){
+            this.invitationPopup = true
+        },
+        // 邀请协作弹窗隐藏
+        collaborationHidden(){
+            this.invitationPopup = false
+        },
+        bindinput(e){
+            let userInput = e.detail.value;
+            this.inputValue = userInput
+            if(userInput){
+                this.shutShow = true
+            }else{
+                this.shutShow = false
+            }
+        },
+        //点击键盘搜索触发
+        bindconfirm(){
+
+        },
+        // 清空输入框值
+        clearnInput(){
+            this.inputValue = ''
+            this.shutShow = false
+        },
+
+        pagesJump(path){
+            if(path == 1){
+                wx.navigateTo({
+                    url: `./DIY`
+                });
+            }else if (path == 2){
+                wx.reLaunch({
+                    url: `./index?currentTab=2`
+                });
+            }else if (path == 3){
+                wx.reLaunch({
+                    url: `./index?currentTab=3`
+                });
+            }else if (path == 4){
+                wx.reLaunch({
+                    url: `./index?currentTab=4`
+                });
+            }
+        }
+    };
+
+    events = {};
+    onLoad() {};
+}
+</script>
+
+<template lang="wxml">
+    <view class="topUserTitleBox">
+        <view>我喜欢的</view>
+        <view class="userIcon_invitationBtn" @tap="invitationOtherUser">
+            <open-data type="userAvatarUrl"/>
+            <button ><text>+</text> 邀请</button>
+        </view>
+    </view>
+    <!-- 创建收藏（空） -->
+    <view class="cream_diyBox">
+        <view class="emptyTextPrompt">
+            还没有收藏，开启收藏之旅
+        </view>
+        <view class="creamDiy">
+            <button><image src='../images/bqphoto_icon@2x.png' /></button>
+            <button><image src='../images/bq_diy_icon@2x.png' /></button>
+        </view>
+    </view>
+    <!-- 选择创建分类 -->
+    <view class="chooseClassBox">
+        <view class="chooseItem" @tap='pagesJump(1)'>
+            <image src='../images/pic_icon@2x.png' />
+            <view class="chooseItemTitle">
+                <view>图库</view>
+                <image src="../images/runin_icon@2x.png" />
+            </view>
+        </view>
+        <view class="chooseItem" @tap='pagesJump(2)'>
+            <image src='../images/product_icon@2x.png' />
+            <view class="chooseItemTitle">
+                <view>产品</view>
+                <image src="../images/runin_icon@2x.png" />
+            </view>
+        </view>
+        <view class="chooseItem" @tap='pagesJump(3)'>
+            <image src='../images/pros_icon@2x.png' />
+            <view class="chooseItemTitle">
+                <view>专业人士</view>
+                <image src="../images/runin_icon@2x.png" />
+            </view>
+        </view>
+        <view class="chooseItem" @tap='pagesJump(4)'>
+            <image src='../images/story_icon@2x.png' />
+            <view class="chooseItemTitle">
+                <view>心得</view>
+                <image src="../images/runin_icon@2x.png" />
+            </view>
+        </view>
+    </view>
+    <!-- 遮罩 -->
+    <view class="masks" wx:if='{{invitationPopup}}' @tap="collaborationHidden"></view>
+    <!-- 邀请协作底部滑出 -->
+    <view class="inviteCollaborationBox {{invitationPopup?'inviteCollaborationBoxShow':''}}" catchtouchmove="ture">
+        <view class="collaborationTitle">邀请协作</view>
+        <view class="searchCollaborationBox">
+            <image src="../images/yqxzsearch_icon@2x.png" />
+            <input placeholder="输入您要查找的姓名或邮箱" confirm-type='search' value='{{inputValue}}' @input='bindinput' @confirm='bindconfirm'/>
+            <image wx:if='{{shutShow}}' class="shutImage" src="../images/yqxzshut_icon@2x.png" @tap="clearnInput"/>
+        </view>
+        <scroll-view scroll-y style="height:870rpx">
+            <view wx:if='{{!shutShow}}' class="currentCollabortationTitle">当前协作人员</view>
+            <!-- 当前协作的用户 -->
+            <view wx:if='{{!shutShow}}' class="currentCollabortationUser">
+                <image src="https://timgsa.baidu.com/timg?image&quality=80&size=b9999_10000&sec=1552813739766&di=6087036d0f8067ccc338d7a06c1b9f54&imgtype=0&src=http%3A%2F%2Fimage.biaobaiju.com%2Fuploads%2F20180301%2F17%2F1519897310-QdeqUJnuBE.jpg" />
+                <view class="ccauRightBox">
+                    <view class="userNameBox">
+                        <view class="userName">张阿安</view>
+                        <view class="userPosition">设计师</view>
+                    </view>
+                    <view class="userPrompt">用户账号</view>
+                </view>
+            </view>
+            <view wx:if='{{!shutShow}}' class="currentCollabortationTitle">为您推荐</view>
+            <!-- 为您推荐用户 -->
+            <view wx:if='{{!shutShow}}' class="currentCollabortationUser">
+                <image src="https://timgsa.baidu.com/timg?image&quality=80&size=b9999_10000&sec=1552813739766&di=6087036d0f8067ccc338d7a06c1b9f54&imgtype=0&src=http%3A%2F%2Fimage.biaobaiju.com%2Fuploads%2F20180301%2F17%2F1519897310-QdeqUJnuBE.jpg" />
+                <view class="ccauRightBox">
+                    <view class="userNameBox">
+                        <view class="userName">阿斯顿马丁</view>
+                        <view class="userPosition">设计师</view>
+                    </view>
+                    <view class="userPrompt">用户账号</view>
+                    <image class="addCollaborationTitle" src="../images/yqxzadd_icon@2x.png" />
+                </view>
+            </view>
+        </scroll-view>
+    </view>
+</template>
+
+<style lang="less">
+    .topUserTitleBox{
+        width: 100%;
+        padding: 0 45rpx 20rpx 45rpx;
+        border-bottom: 1rpx solid rgb(233, 229, 229);
+        view:first-of-type{
+            font-size: 36rpx;
+            color: #000;
+        }
+        .userIcon_invitationBtn{
+            display: flex;
+            align-content: center;
+            padding-top: 20rpx;
+            open-data{
+                width: 60rpx;
+                height: 60rpx;
+                border-radius: 50%;
+                overflow: hidden;
+            }
+            button{
+                margin-left: 30rpx;
+                width: 120rpx;
+                height: 60rpx;
+                background-color: #fff;
+                border-radius: 50rpx;
+                color: #6483b1;
+                border: 1rpx solid #6483b1;
+                line-height: 60rpx;
+                font-size: 30rpx;
+                text{
+                    font-size: 33rpx;
+                    transform: translateY(-4rpx);
+                    display: inline-block;
+                }
+            }
+        }
+    }
+    .cream_diyBox{
+        width: 100%;
+        padding: 35rpx;
+        display: flex;
+        justify-content: flex-end;
+        .emptyTextPrompt{
+            color: #a9a9a9;
+            padding-right: 45rpx;
+        }
+        .creamDiy{
+            display: flex;
+            align-items: center;
+            width: 180rpx;
+            justify-content: space-between;
+            button{
+                flex: .4;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background-color: #fff;
+                image{
+                    width: 42rpx;
+                    height: 36rpx;
+                }
+            }
+        }
+    }
+    .chooseClassBox{
+        width: 100%;
+        padding: 0 10rpx;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        .chooseItem{
+            height: 370rpx;
+            width: 49%;
+            padding-top: 25rpx;
+            border-radius: 10rpx;
+            box-shadow: 0 0 10rpx rgb(226, 225, 225);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            align-items: center;
+            margin-bottom: 15rpx;
+            image{
+                width: 110rpx;
+                height: 110rpx;
+            }
+            .chooseItemTitle{
+                display: flex;
+                align-items: center;
+                view{
+                    color: #a9a9a9;
+                }
+                image{
+                    width: 23rpx;
+                    height: 23rpx;
+                    margin-left: 15rpx;
+                }
+            }
+        }
+    }
+    .inviteCollaborationBox{
+        z-index: 11;
+        background-color: #fff;
+        border-radius: 10rpx 10rpx 0 0;
+        width: 100%;
+        height: 1050rpx;
+        position: fixed;
+        bottom: -1050rpx;
+        left: 0rpx;
+        transition: all .3s linear;
+        .collaborationTitle{
+            width: 100%;
+            text-align: center;
+            height: 100rpx;
+            line-height: 100rpx;
+            border-bottom: 1rpx solid rgb(231, 231, 231);
+        }
+        .searchCollaborationBox{
+            height: 80rpx;
+            line-height: 80rpx;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            padding: 0 30rpx;
+            border-bottom: 1rpx solid rgb(231, 231, 231);
+            image{
+                width: 35rpx;
+                height: 35rpx;
+            }
+            .shutImage{
+                width: 20rpx;
+                height: 20rpx;
+            }
+            input{
+                flex: 1;
+                font-size: 26rpx;
+                padding-left: 30rpx;
+            }
+        }
+        scroll-view{
+            width: 100%;
+            box-sizing: border-box;
+            padding: 0rpx 30rpx 25rpx 30rpx;
+            .currentCollabortationTitle{
+                font-size: 26rpx;
+                color: #cdcdcd;
+                padding-top: 25rpx;
+                padding-bottom: 20rpx;
+            }
+            .currentCollabortationUser{
+                width: 100%;
+                padding-bottom: 40rpx;
+                display: flex;
+                align-items: center;
+                image{
+                    width: 85rpx;
+                    height: 85rpx;
+                    border-radius: 50%;
+                    border: 1rpx solid #f1f1f1;
+                }
+                .ccauRightBox{
+                    position: relative;
+                    flex: 1;
+                    padding-left: 25rpx;
+                    display: flex;
+                    flex-direction: column;
+                    height: 85rpx;
+                    justify-content: space-between;
+                    .userNameBox{
+                        display: flex;
+                        align-items: center;
+                        .userName{
+                            font-size: 30rpx;
+                            color: #000;
+                        }
+                        .userPosition{
+                            margin-left: 20rpx;
+                            width: 100rpx;
+                            height: 40rpx;
+                            border-radius: 10rpx;
+                            background-color: #6483b1;
+                            color: #ffffff;
+                            font-size: 24rpx;
+                            text-align: center;
+                            line-height: 40rpx;
+                        }
+                    }
+                    .userPrompt{
+                        font-size: 24rpx;
+                        color: #888888;
+                    }
+                    .addCollaborationTitle{
+                        width: 50rpx;
+                        height: 50rpx;
+                        position: absolute;
+                        top: 0;
+                        bottom: 0rpx;
+                        margin: auto;
+                        right: 0;
+                    }
+                }
+            }
+        }
+    }
+    .inviteCollaborationBoxShow{
+        bottom: 0rpx;
+    }
+</style>

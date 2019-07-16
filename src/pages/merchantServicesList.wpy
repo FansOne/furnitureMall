@@ -1,0 +1,92 @@
+<script>
+import wepy from 'wepy';
+import api from '../api/api'
+import { request,toast } from '../utils/request'
+
+export default class merchantServicesList extends wepy.page {
+    config = {
+        navigationBarTitleText: '设计师服务',
+    };
+    components = {};
+
+    data = {
+        m_id:'',
+        page:1,
+        allData:[]
+    };
+    methods = {
+        // 设计师服务详情
+        severDetails(id){
+            wx.navigateTo({
+                url: `./serviceDetails?id=${id}`
+            });
+        }
+    };
+
+    events = {};
+    onLoad(options) {
+        this.m_id = options.m_id
+        // 获取商户下案例列表
+        this.serviceList(options.m_id)
+    };
+    // 页面上拉触底
+    onReachBottom(){
+        wx.showLoading({
+            title: '加载中...',
+            mask: true,
+        });
+        this.page++
+        this.serviceList(this.m_id)
+    }
+    // 获取设计师服务商品
+    serviceList(m_id){
+        request(api.works,'GET',{
+            m_id:m_id,
+            page:this.page,
+            status:1
+        }).then(res=>{
+            wx.hideLoading();
+            if(res.data.status == 200){
+                res.data.message.forEach(element => {
+                    element.price = Number(element.price/100).toFixed(2)
+                });
+                if(this.page == 1){
+                    this.allData = res.data.message
+                }else{
+                    if(res.data.message.length){
+                        res.data.message.forEach(element => {
+                            this.allData.push(element)
+                        });
+                    }else{
+                        toast('已加载全部数据')
+                        this.page--
+                    }
+                }
+                this.$apply()
+            }else{
+                wx.setNavigationBarColor({backgroundColor:'#e5e5e5'})
+                toast(res.data.message||'请求服务器数据异常')
+            }
+        })
+    }
+}
+</script>
+
+<template lang="wxml">
+    <view class="releaseSeverceBox" style="background-color:#fff" wx:if='{{allData.length}}' wx:for='{{allData}}' wx:key=''  @tap='severDetails({{item.id}})'>
+        <image src="{{item.cover}}" />
+        <view class="releaseSeverceR">
+            <view>
+                <view class="releaseSeverceTitle">{{item.title}}</view>
+                <view class="affiliated_name">{{item.text}}</view>
+            </view>
+            <view class="severcePrice">
+                <view>￥{{item.price}}</view>
+                <view>{{item.cateName}}</view>
+            </view>
+        </view>
+    </view>
+</template>
+
+<style lang="less">
+</style>

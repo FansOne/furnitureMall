@@ -1,0 +1,85 @@
+<script>
+import wepy from 'wepy';
+import api from '../api/api'
+import { request,toast } from '../utils/request'
+
+export default class merchantCasesList extends wepy.page {
+    config = {
+        navigationBarTitleText: '更多案例'
+    };
+    components = {};
+
+    data = {
+        m_id:'',
+        page:1,
+        allData:null,
+    };
+    methods = {
+        // 案例详情
+        clckScreenImg(item_){
+            let item = JSON.stringify(item_)
+            wx.navigateTo({
+                url: `./caseDetails?item=${item}`
+            })
+        }
+    };
+
+    events = {};
+    onLoad(options) {
+        this.m_id = options.m_id
+        // 获取商户下案例列表
+        this.caseList(options.m_id)
+    };
+    caseList(m_id){
+        request(api.photos,'GET',{
+            m_id:m_id,
+            page:this.page
+        }).then(res=>{
+            wx.hideLoading();
+            if(res.data.status == 200){
+                if(this.page == 1){
+                    this.allData = res.data.message
+                }else{
+                    if(res.data.message.data.length){
+                        res.data.message.data.forEach(element => {
+                            this.allData.data.push(element)
+                        });
+                    }else{
+                        toast('已加载全部数据')
+                        this.page--
+                    }
+                }
+                this.$apply()
+            }else{
+                wx.setNavigationBarColor({backgroundColor:'#e5e5e5'})
+                toast(res.data.message||'请求服务器数据异常')
+            }
+        })
+    }
+    // 页面上拉触底
+    onReachBottom(){
+        wx.showLoading({
+            title: '加载中...',
+            mask: true,
+        });
+        this.page++
+        this.caseList(this.m_id)
+    }
+}
+</script>
+
+<template lang="wxml">
+    <view class="caseBox" wx:if='{{allData.data.length}}'>
+        <view class="caseItemBox" wx:for='{{allData.data}}' wx:key='' @tap='clckScreenImg({{item}})'>
+            <image src="{{item.cover}}"><view>含{{item.label.length}}款商品</view></image>
+            <view class="caseGoodTitle">{{item.roomName}}</view>
+        </view>
+    </view>
+    <view wx:else class="noBQ" style="padding-top:300rpx;">
+        <image src="../images/kbq.png" />
+        <view>空空如也</view>
+    </view>
+</template>
+
+<style lang="less">
+</style>

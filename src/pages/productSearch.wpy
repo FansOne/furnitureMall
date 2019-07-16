@@ -1,0 +1,346 @@
+<script>
+import wepy from 'wepy';
+import api from '../api/api'
+import { request,toast } from '../utils/request'
+
+export default class productSearch extends wepy.page {
+    config = {
+        navigationBarTitleText:''
+    };
+    components = {};
+
+    data = {
+        inputValue:null,
+        searchClass:'',
+        placeholder:'',
+        goodList:[],
+        contentStatus:false,
+        designMsg:null,
+        stars: [0, 1, 2, 3, 4],
+        normalSrc: 'https://img.zhizubaba.com/jBjH445aq0u0QbmvX1qITvCEOsjtYcynGcgHRVQ8.png',
+        selectedSrc: 'https://img.zhizubaba.com/YAH2TyGehe8AA0dRBLOqkuLMTavWBCxAqpMiuyIH.png',
+    };
+    methods = {
+        // 监听输入
+        bindinput(e){
+            this.inputValue = e.detail.value
+        },
+        // 搜索
+        bindconfirm(){
+            if(!this.inputValue){
+                toast('请输入搜索内容')
+            }else{
+                // 执行搜索函数
+                if(this.searchClass == 'goodsSearch'){ //商品搜索
+                    this.goodsSearch(this.inputValue)
+                }else if(this.searchClass == 'caseSearch'){ //案例搜索
+                    this.caseSearch(this.inputValue)
+                }else if(this.searchClass == 'designSearch'){     //设计师商户查找
+                    this.designSearch(this.inputValue)
+                }else if(this.searchClass == 'serviceSearch'){  //服务搜索
+                    this.serviceSearch(this.inputValue)
+                }else if(this.searchClass == 'experienceSearch'){  //搜索交流心得
+                    this.experienceSearch(this.inputValue)
+                }
+            }
+        },
+        // 商品详情
+        goodDetail(cover,id){
+            wx.navigateTo({
+                url: `./goodDetails?goodsId=${id}&cover=${cover}`
+            });
+        },
+        // 案例详情
+        clckScreenImg(item_){
+            let item = JSON.stringify(item_)
+            wx.navigateTo({
+                url: `./caseDetails?item=${item}`
+            })
+        },
+        // 设计师详情
+        goDesign(item){
+            if(this.designMsg.isMerchant == 1 && item.id == this.designMsg.designShopId){
+                wx.navigateTo({
+                    url: `./design?avatarUrl=${item.avatar}&nickname=${item.name}&isMerchant=1&id=${item.id}`
+                });
+            }else{
+                wx.navigateTo({
+                    url: `./design?avatarUrl=${item.avatar}&nickname=${item.name}&isMerchant=0&id=${item.id}`
+                });
+            }
+        },
+        // 设计师服务详情
+        severDetails(id){
+            wx.navigateTo({
+                url: `./serviceDetails?id=${id}`
+            });
+        },
+        // 心得详情
+        goExperienceDetails(id){
+            wx.navigateTo({
+                url: `./experienceDetailsFirst?id=${id}`
+            })
+        }
+    };
+
+    events = {};
+    onLoad(options) {
+        // console.log(options.searchClass)
+        this.searchClass = options.searchClass
+        if(options.searchClass == 'goodsSearch'){
+            this.placeholder = '查找你喜爱的商品'
+        }else if(options.searchClass == 'caseSearch'){
+            this.placeholder = '查找你喜欢的装修案例/风格'
+        }else if(options.searchClass == 'designSearch'){
+            this.designMsg = wx.getStorageSync('designMsg');
+            this.placeholder = '设计师商户查找'
+        }else if(options.searchClass == 'serviceSearch'){
+            this.placeholder = '聚服务搜索'
+        }else if (options.searchClass == 'experienceSearch'){
+            this.placeholder = '查找交流心得'
+        }
+    };
+    // 商品搜索请求
+    goodsSearch(name){
+        request(api.goodList,'GET',{ name : name }).then(res=>{
+            wx.hideLoading();
+            if(res.data.status == 200){
+                if(!res.data.message.data.length) {
+                    this.contentStatus = true
+                }else{
+                    this.contentStatus = false
+                    res.data.message.data.forEach(element => {
+                        element.market = Number(element.market/100).toFixed(2)
+                        element.price = Number(element.price/100).toFixed(2)
+                    });
+                }
+                this.goodList = res.data.message.data
+                this.$apply()
+            }else{
+                toast(res.data.message||'请求服务器数据异常')
+            }
+        })
+    }
+    // 案例搜索请求
+    caseSearch(name){
+        request(api.photos,'GET',{
+            name:name
+        }).then(res=>{
+            wx.hideLoading();
+            if(res.data.status == 200){
+                if(!res.data.message.data.length) {
+                    this.contentStatus = true
+                }else{
+                    this.contentStatus = false
+                }
+                this.goodList = res.data.message.data
+                this.$apply()
+            }else{
+                toast(res.data.message||'请求服务器数据异常')
+            }
+        })
+    }
+    // 搜索设计师请求
+    designSearch(name){
+        request(api.dataAudit,'GET',{
+            name:name
+        }).then(res=>{
+            wx.hideLoading();
+            if(res.data.status == 200){
+                if(!res.data.message.data.length) {
+                    this.contentStatus = true
+                }else{
+                    this.contentStatus = false
+                }
+                this.goodList = res.data.message.data
+                this.$apply()
+            }else{
+                toast(res.data.message||'请求服务器数据异常')
+            }
+        })
+    }
+    // 搜索服务
+    serviceSearch(name){
+        request(api.works,'GET',{
+            name:name
+        }).then(res=>{
+            wx.hideLoading();
+            if(res.data.status == 200){
+                if(!res.data.message.length) {
+                    this.contentStatus = true
+                }else{
+                    this.contentStatus = false
+                }
+                this.goodList = res.data.message
+                this.$apply()
+            }else{
+                toast(res.data.message||'请求服务器数据异常')
+            }
+        })
+    }
+    // 搜索交流心得
+    experienceSearch(name){
+        request(api.forums,'GET',{
+            name:name
+        }).then(res=>{
+            wx.hideLoading();
+            if(res.data.status == 200){
+                if(!res.data.message.data.length) {
+                    this.contentStatus = true
+                }else{
+                    this.contentStatus = false
+                }
+                this.goodList = res.data.message.data
+                this.$apply()
+            }else{
+                toast(res.data.message||'请求服务器数据异常')
+            }
+        })
+    }
+}
+</script>
+
+<template lang="wxml">
+    <!-- 搜索框 -->
+    <view class="productSearchBox">
+        <view class="inputBox">
+            <image src='../images/home_search_icon.png'/>
+            <input placeholder="{{placeholder}}" placeholder-style="font-size:26rpx" confirm-type='search' focus @confirm='bindconfirm' @input='bindinput' value='{{inputValue}}'/>
+        </view>
+        <view class="searchText" @tap='bindconfirm'>搜索</view>
+    </view>
+    <!-- 查找结果展示 -->
+    <view class="searchContentBox" style="{{goodList.length && searchClass != 'experienceSearch' && searchClass != 'serviceSearch' && searchClass != 'caseSearch'?'background-color: #eeeeee;':''}}">
+        <!-- 搜索到的商品列表 -->
+        <view class="goodsCategoryBox" style="padding:0rpx 15rpx;" wx:if="{{goodList.length && searchClass == 'goodsSearch'}}">
+            <view class="goodsCategoryItem activeBox recommend" wx:for='{{goodList}}' wx:key='' style="background-color:#fff;" @tap='goodDetail({{item.cover_picture}},{{item.id}})'>
+                <image src='{{item.cover_picture}}'/>
+                <view class="activePriceBox">
+                    <view class="title">{{item.name}}</view>
+                    <view class="brand">{{item.affiliated_name}}</view>
+                    <view class="sell"><text>￥{{item.price}}</text><text class="throughLine">￥{{item.market}}</text></view>
+                    <!-- <view>******(5)</view> -->
+                    <view class="star-wrap">
+                        <view class="star">
+                            <view class = 'startBox'>
+                                <block wx:for="{{stars}}" wx:key='idx' wx:for-item='itemStar'>
+                                    <image class="star-image" style="left: {{itemStar*30}}rpx;" src="{{item.customer_rating > itemStar ?selectedSrc : normalSrc}}">
+                                        <view class="item" style="left:0rpx" data-key="{{itemStar+0.5}}"></view>
+                                        <view class="item" style="left:25rpx" data-key="{{itemStar+1}}"></view>
+                                    </image>
+                                </block>
+                            </view>
+                        </view>
+                    </view>
+                </view>
+                <image class="hostSellIcon" src="../images/jgw_rm.png"/>
+            </view>
+        </view>
+        <!-- 搜索到的案例列表 -->
+        <view class="caseBox" wx:if="{{goodList.length && searchClass == 'caseSearch'}}">
+            <view class="caseItemBox" wx:for='{{goodList}}' wx:key='' @tap='clckScreenImg({{item}})'>
+                <image src="{{item.cover}}"><view>含{{item.label.length}}款商品</view></image>
+                <view class="caseGoodTitle">{{item.roomName}}</view>
+            </view>
+        </view>
+        <!-- 设计师商户列表 -->
+        <view class="designListBox" wx:if="{{goodList.length && searchClass == 'designSearch'}}">
+            <view class="designListItem" wx:for='{{goodList}}' wx:key='' style="height:390rpx">
+                <image class="shoppingCover" src="{{item.icon}}"/>
+                <!-- 遮罩及用户信息 -->
+                <view class="shoppingCoverMask" @tap="goDesign({{item}})">
+                    <image class="userCover" src="{{item.avatar}}" />
+                    <view class='coverMaskRight'>
+                        <view>{{item.name}}</view>
+                        <view class="star-wrap">
+                            <view class="star">
+                                <view class = 'startBox'>
+                                    <block wx:for="{{stars}}" wx:key='idx' wx:for-item='itemStar'>
+                                        <image class="star-image" style="left: {{itemStar*30}}rpx;" src="{{item.score > itemStar ?selectedSrc : normalSrc}}">
+                                            <view class="item" style="left:0rpx" data-key="{{itemStar+0.5}}"></view>
+                                            <view class="item" style="left:25rpx" data-key="{{itemStar+1}}"></view>
+                                        </image>
+                                    </block>
+                                </view>
+                            </view>
+                            <view style="font-size:26rpx;transform: translateY(-4rpx);color:#fff">({{item.score}})</view>
+                        </view>
+                    </view>
+                </view>
+                <view class="addressBox">
+                    <image src="../images/zyrs_wz@2x.png"/>
+                    <view>{{item.address}}</view>
+                </view>
+            </view>
+        </view>
+        <!-- 服务列表 -->
+        <view class="releaseSeverceBox" style="background-color:#fff" wx:if="{{goodList.length && searchClass == 'serviceSearch'}}" wx:for='{{goodList}}' wx:key=''  @tap='severDetails({{item.id}})'>
+            <image src="{{item.cover}}" />
+            <view class="releaseSeverceR">
+                <view>
+                    <view class="releaseSeverceTitle">{{item.title}}</view>
+                    <view class="affiliated_name">{{item.text}}</view>
+                </view>
+                <view class="severcePrice">
+                    <view>￥{{item.price}}</view>
+                    <view>{{item.cateName}}</view>
+                </view>
+            </view>
+        </view>
+        <!-- 心得列表 -->
+        <view class="experienceListBox" wx:if="{{goodList.length && searchClass == 'experienceSearch'}}">
+            <view class='experienceListFor' wx:for='{{goodList}}' wx:key='' @tap='goExperienceDetails({{item.id}})'>
+                <image class="experienceCover" src="{{item.cover}}" />
+                <view class="experienceIntroduce">
+                    <view class="experienceTitle">{{item.title}}</view>
+                    <view class="experienceUserOperation">
+                        <image src="{{item.icon}}" />
+                        <view class="experienceCommentNumBox">
+                            <view>{{item.review}}评论</view>
+                            <view>{{item.zan}}赞</view>
+                        </view>
+                    </view>
+                </view>
+            </view>
+        </view>
+        <!-- 未找到用户搜索提示 -->
+        <view wx:if='{{contentStatus}}' class="noBQ" style="padding-top:260rpx">
+            <image src="../images/kbq.png" />
+            <view>非常抱歉</view>
+            <view>没有找到相关产品</view>
+        </view>
+    </view>
+</template>
+
+<style lang="less">
+    .productSearchBox{
+        width: 100%;
+        padding: 15rpx 30rpx;
+        display: flex;
+        align-items: center;
+        .inputBox{
+            flex: 1;
+            display: flex;
+            align-items: center;
+            background-color:#eeeeee;
+            padding: 10rpx 20rpx;
+            border-radius: 10rpx;
+            image{
+                width: 35rpx;
+                height: 35rpx;
+                margin-right: 14rpx;
+            }
+            input{
+                flex: 1;
+            }
+        }
+        .searchText{
+            padding-left: 25rpx;
+            color: rgb(116, 116, 116);
+        }
+    }
+    .searchContentBox{
+        width: 100%;
+        padding: 30rpx 0;
+    }
+</style>

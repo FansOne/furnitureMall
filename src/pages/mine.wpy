@@ -1,0 +1,580 @@
+<script>
+import wepy from 'wepy'
+import api from '../api/api'
+import { request,toast } from '../utils/request'
+
+export default class mine extends wepy.page {
+    config = {
+        navigationBarTitleText: '我的',
+    };
+    components = {};
+
+    data = {
+        navbar: ['文件', '列表'],
+        currentTab: 0,
+        scrollHeight:'',
+        mineOriginalityExhibition:[],
+        moduleEntry:[
+            // {
+            //     cover:'../images/my_home_icon@2x.png',
+            //     title:'需求定制'
+            // },
+            {
+                cover:'../images/renzheng.png',
+                title:'设计师'
+            },
+            // {
+            //     cover:'../images/my_activity_icon@2x.png',
+            //     title:'我的动态'
+            // },
+            {
+                cover:'../images/my_history_icon@2x.png',
+                title:'历史浏览'
+            },
+            {
+                cover:'../images/my_order_icon@2x.png',
+                title:'我的订单'
+            }
+        ],
+        userInfo:null,
+        masksHidden:true,
+        pageShow:false,
+        titleValue:null,
+        bitmap:'https://img.zhizubaba.com/i9yZpuOgzWTfsojF1e99bFZjizGRhcW9sHbvQiIN.png'
+    };
+    methods = {
+        navbarTap(status){
+          this.currentTab = status;
+        },
+        messageModify(){
+            wx.navigateTo({
+                url: './userMessageModify'
+            })
+        },
+        cartPage(){
+            wx.navigateTo({
+                url: './shoppingCard'
+            });
+        },
+        cameraPage(){
+            wx.navigateTo({
+                url: `./camera?route=index`
+            });
+        },
+        divPage(){
+            wx.navigateTo({
+                url: './DIY'
+            });
+        },
+        // 编辑创意书
+        editOriginalityBook(id){
+            this.mineOriginalityExhibition.forEach(element => {
+                if(element.id == id){
+                    element.editShow = true
+                }else{
+                    element.editShow = false
+                }
+            });
+        },
+        styleCustomization(id,cover,title){
+            if(cover==''){
+                wx.navigateTo({
+                    url: `./myLike?id=${id}&title=${title}`
+                })
+            }
+            // wx.navigateTo({
+            //     url: './mineStyleCustomization' 此页面废了
+            // });
+        },
+        // 列表条目跳转
+        mineGumpOtherPage(index){
+            if(index == 0){           //跳转设计师认证
+                let is_merchant = this.userInfo.is_merchant;
+                if(is_merchant == 0){
+                    wx.navigateTo({
+                        url: `./dataAudit?avatarUrl=${this.userInfo.avatar}`
+                    })
+                }else if (is_merchant == 1){
+                    wx.navigateTo({
+                        url: `./design?avatarUrl=${this.userInfo.avatar}&nickname=${this.userInfo.nickname}&isMerchant=1&id=${wx.getStorageSync('designMsg').designShopId}`
+                    })
+                }else if(is_merchant == 2){
+                    toast('认证中...')
+                }
+            }else if(index==1){     //跳转历史浏览
+                wx.navigateTo({
+                    url: `./historyBrowsing?avatarUrl=${this.userInfo.avatar}&nickname=${this.userInfo.nickname}`
+                });
+            }else if(index==2){     //跳转我的订单
+                wx.navigateTo({
+                    url: `./orderLists`
+                })
+            }
+        },
+        // 便签标题输入弹窗显示
+        inputTitle(){
+            this.masksHidden = false
+        },
+        // 点击遮罩隐藏
+        masksHidden(){
+            this.masksHidden = true
+        },
+        // 创建便签
+        formSubmit(e){
+            let titleValue = e.detail.value.title;
+            let url = api.notes;
+            if(titleValue){
+                request(url,'POST',{ title:titleValue }).then(res=>{
+                    wx.hideLoading();
+                    if(res.data.status == 200){
+                        toast('创建成功','success')
+                        this.masksHidden = true
+                        this.titleValue = ''
+                        this.$apply()
+                        request(api.notes).then(res=>{
+                            wx.hideLoading();
+                            this.mineOriginalityExhibition = res.data.message.data
+                            this.$apply()
+                        })
+                    }
+                })
+            }else{
+                toast('请输入便签标题')
+            }
+        },
+        editHidden(index){
+            this.mineOriginalityExhibition[index].editShow = false
+        },
+        // 移除便签
+        deleteEdit(id){
+            let url = `${api.notes}/${id}`;
+            wx.showModal({
+                content: '确定移除该便签吗？',
+                showCancel: true,
+                cancelText: '取消',
+                cancelColor: '#000000',
+                confirmText: '确定',
+                confirmColor: '#3CC51F',
+                success: res => {
+                    if(res.confirm){
+                        request(url,'DELETE').then(res=>{
+                            request(api.notes).then(res=>{
+                                wx.hideLoading();
+                                this.mineOriginalityExhibition = res.data.message.data
+                                this.$apply()
+                            })
+                        })
+                    }
+                }
+            });
+        },
+        // 通知消息跳转页面
+        toOtherPages(url){
+            toast(url)
+        }
+    };
+
+    events = {};
+    onLoad() {
+        wx.getSystemInfo({
+          success:(res)=> {
+              //创建节点选择器
+              let query = wx.createSelectorQuery();
+              query.select('.topListBox').boundingClientRect()
+              query.exec((result) => {
+                  this.scrollHeight = res.windowHeight - result[0].height
+                  this.$apply()
+              })
+          }
+        })
+        // 获取用户信息&便签列表
+        Promise.all([request(api.userMess),request(api.notes)]).then(res=>{
+            wx.hideLoading();
+            this.userInfo = res[0].data.message
+            this.mineOriginalityExhibition = res[1].data.message.data
+            this.pageShow = true
+            this.$apply()
+        })
+    };
+    // 触底加载
+    paging(){
+      // wx.showLoading({ title: '加载中...' });
+    }
+}
+</script>
+
+<template lang="wxml">
+    <!-- tabMenu -->
+    <!-- wx:if='{{pageShow}}' -->
+    <view class="topListBox">
+        <view class='orderTabs'>
+            <!--循环-->
+            <view wx:for="{{navbar}}" wx:key="unique" class="item {{currentTab==index ? 'active' : ''}}" @tap="navbarTap({{index}})">
+                {{item}}
+            </view>
+        </view>
+        <view class="noticeBox" wx:if='{{!currentTab}}'>
+            <image src="../images/my_message_icon@2x.png" />
+            <image src="../images/home_cart_icon.png" @tap='cartPage'/>
+        </view>
+    </view>
+    
+    <!-- tabItem -->
+    
+    <!-- 文件 -->
+    <scroll-view hidden="{{currentTab !== 0}}" scroll-y style='height:{{scrollHeight}}px' bindscrolltolower='paging' wx:if='{{pageShow}}'>
+        <!-- 用户头像等信息 -->
+        <view class="userMessageBox">
+            <view class="userIcon"><open-data type="userAvatarUrl"/></view>
+            <view class='userNickNameBox'>
+                <open-data type="userNickName" class='userNickName'/>
+                <view class="fans">0关注<text>|</text>0粉丝</view>
+                <image src="../images/my_edi_icon@2x.png" class="signIcon" @tap='messageModify'/>
+            </view>
+        </view>
+        <!-- 通知 -->
+        <view class="noticeBox">
+            <view class="noticeBtn">通知</view>
+            <swiper class="noticeContant" autoplay circular vertical interval='3500'>
+                <block wx:for="{{userInfo.appNotice}}" wx:key=''>
+                    <swiper-item @tap='toOtherPages({{item.url}})'>
+                        <view>{{item.data}}</view>
+                    </swiper-item>
+                </block>
+            </swiper>
+        </view>
+        <!-- 相机和DIY -->
+        <view class="cameraBox">
+            <view class="cameraLeft" @tap='cameraPage'>
+                <image src="../images/my_photo_icon@2x.png" />
+                <view>相机拍照</view>
+            </view>
+            <view class="cameraRight" @tap='divPage'>
+                <image src="../images/my_diy_icon@2x.png" />
+                <view>DIY</view>
+            </view>
+        </view>
+        <!-- 我的创意书 -->
+        <view class="mineOriginalityTitle">
+            <view>我的便签</view>
+            <image src="../images/my_search_icon@2x.png" />
+        </view>
+        <view class="mineOriginalityExhibitionBox" wx:if='{{mineOriginalityExhibition.length}}'>
+            <view class="mineOriginalityExhibitionItem" wx:for='{{mineOriginalityExhibition}}' wx:key=''>
+                <image src='{{item.cover?item.cover:bitmap}}' @tap='styleCustomization({{item.id}},{{item.cover}},{{item.title}})'>
+                    <view class="my_more" @tap.stop="editOriginalityBook({{item.id}})">
+                        <image src="../images/my_more_icon@2x.png" />
+                    </view>
+                </image>
+                <view class="mineOriginalityExhibitionTitle">{{item.title}}</view>
+                <!-- 编辑创意书 -->
+                <view wx:if='{{item.editShow}}' class="editOriginality">
+                    <view @tap='deleteEdit({{item.id}})'>删除</view>
+                    <!-- <view>编辑</view> -->
+                    <!-- <view>协作</view> -->
+                    <view style='color:#6483b1' @tap='editHidden({{index}})'>取消</view>
+                </view>
+            </view>
+        </view>
+        <view wx:else class="noBQ">
+            <image src="../images/kbq.png" />
+            <view>你还没收藏/添加便签，快创建喜欢的便签吧~٩(๑❛ᴗ❛๑)۶~</view>
+        </view>
+        <!-- 加号 -->
+        <image class="plusFunction" src="../images/my_pub_but@2x.png" @tap='inputTitle'/>
+    </scroll-view>
+    <!-- 列表 -->
+    <scroll-view hidden="{{currentTab !== 1}}" scroll-y style='height:{{scrollHeight}}px' bindscrolltolower='paging' wx:if='{{pageShow}}'>
+        <view class="systemNoticeBox">
+            <view>通知</view>
+            <view>家汇最新消息</view>
+        </view>
+        <view class="moduleEntryBox" wx:for='{{moduleEntry}}' wx:key='' @tap='mineGumpOtherPage({{index}})'> 
+            <image src="{{item.cover}}" class="{{index == 1?'historyRecord':''}} {{index == 0?'bagRecord':''}}" />
+            <view>{{item.title}}</view>
+        </view>
+    </scroll-view>
+    <view class="masks" hidden='{{masksHidden}}' @tap='masksHidden' catchtouchmove="ture"></view>
+    <!-- 标题弹窗 -->
+    <view class="titleBox_ {{masksHidden?'':'demandBoxShow'}}" catchtouchmove="ture" wx:if='{{pageShow}}'>
+        <view class="demandBox">
+            <view class="demandTitleBox">
+                <view>创建便签标题</view>
+                <image src="../images/yqxzshut_icon@2x.png" @tap='masksHidden'/>
+            </view>
+            <form report-submit='true' bindsubmit='formSubmit'>
+                <view class="inputBox">
+                    <view>*</view>
+                    <input placeholder="输入便签标题" name='title' value="{{titleValue}}"/>
+                </view>
+                <button form-type="submit">提交</button>
+            </form>
+        </view>
+    </view>
+</template>
+
+<style lang="less">
+    .userMessageBox{
+        position: relative;
+        height: 240rpx;
+        width: 100%;
+        padding: 0 37rpx;
+        background-image: url('https://wx-shopping-1257093177.cos.ap-beijing.myqcloud.com/my_bg%402x.png');
+        background-size: 100%;
+        background-repeat: no-repeat;
+        display: flex;
+        align-items: center;
+        .userIcon{
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 160rpx;
+            height: 160rpx;
+            background-color: #fff;
+            open-data{
+                width: 157rpx;
+                height: 157rpx;
+            }
+        }
+        .userNickNameBox{
+            padding-left: 40rpx;
+            padding-bottom: 7rpx;
+            height: 160rpx;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            .userNickName{
+                font-size: 36rpx !important;
+                color: #fff;
+            }
+            .fans{
+                color: #fff;
+                font-size: 26rpx;
+                text{
+                    display: inline-block;
+                    padding: 0 10rpx;
+                    margin-top: 27rpx;
+                }
+            }
+        }
+        .signIcon{
+            position: absolute;
+            right: 40rpx;
+            top: 23rpx;
+            height: 53rpx;
+            width: 53rpx;
+        }
+    }
+    .noticeBox{
+        padding: 25rpx;
+        display: flex;
+        align-items: center;
+        border-bottom: 1rpx solid #eeecec;
+        .noticeBtn{
+            background-color: #4c77b3;
+            color: #fff;
+            width: 120rpx;
+            height: 60rpx;
+            text-align: center;
+            line-height: 60rpx;
+            border-radius: 7rpx;
+        }
+        .noticeContant{
+            flex: 1;
+            height: 60rpx;
+            color: #444343;
+            padding-left: 20rpx;
+            view{
+                width: 100%;
+                height: 60rpx;
+                line-height: 60rpx;
+                overflow:hidden;
+                text-overflow:ellipsis;
+                white-space:nowrap
+            }
+        }
+    }
+    .cameraBox{
+        display: flex;
+        align-items: center;
+        justify-content: space-around;
+        padding: 30rpx 0;
+        border-bottom: 1rpx solid #eeecec;
+        .cameraLeft,.cameraRight{
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: .5;
+            view{
+                font-size: 28rpx;
+            }
+        }
+        .cameraRight{
+            border-left: 1rpx solid #eeecec;
+        }
+        image{
+            width: 45rpx;
+            height: 40rpx;
+            margin-bottom: 8rpx;
+        }
+    }
+    .mineOriginalityTitle{
+        display: flex;
+        padding: 20rpx 25rpx;
+        justify-content: space-between;
+        view{
+            color: #888;
+        }
+        image{
+            width: 30rpx;
+            height: 30rpx;
+        }
+    }
+    .mineOriginalityExhibitionBox{
+        width: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        padding: 0 7rpx;
+        justify-content: space-between;
+        .mineOriginalityExhibitionItem{
+            position: relative;
+            width: 49.5%;
+            height: 364rpx;
+            border-radius: 10rpx;
+            margin-bottom: 10rpx;
+            overflow: hidden;
+            image{
+                width: 100%;
+                height: 100%;
+                border-radius: 7rpx;
+                .my_more{
+                    position: absolute;
+                    top: 25rpx;
+                    right: 27rpx;
+                    width: 35rpx;
+                    height: 65rpx;
+                    display: flex;
+                    justify-content: flex-end;
+                    image{
+                        width: 11rpx;
+                        height: 44rpx;
+                    }
+                }
+            }
+            .mineOriginalityExhibitionTitle{
+                width: 100%;
+                position: absolute;
+                bottom: 15rpx;
+                left: 30rpx;
+                font-size: 24rpx;
+                color: #888;
+            }
+            .editOriginality{
+                overflow: hidden;
+                width: 240rpx;
+                height: 168rpx;
+                padding: 30rpx;
+                background-color: #fff;
+                position: absolute;
+                left: 60rpx;
+                top: 30rpx;
+                border-radius: 10rpx;
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+                view{
+                    color: #131110;
+                    font-size: 33rpx;
+                    width: 100%;
+                }
+            }
+        }
+    }
+    .plusFunction{
+        width: 150rpx;
+        height: 150rpx;
+        position: fixed;
+        bottom: 0rpx;
+        right: 0rpx;
+    }
+    .systemNoticeBox{
+        padding: 30rpx 25rpx 40rpx 25rpx;
+        border-top: 1rpx solid #eeecec;
+        display: flex;
+        align-items: center;
+        view:nth-child(1){
+            background-color: #4c77b3;
+            color: #fff;
+            font-size: 28rpx;
+            padding: 0 13rpx;
+            margin-right: 25rpx;
+        }
+        view:nth-child(2){
+            font-size: 28rpx;
+            flex: 1;
+            overflow:hidden;
+            text-overflow:ellipsis;
+            white-space:nowrap
+        }
+    }
+    .moduleEntryBox{
+        display: flex;
+        align-items: center;
+        width: 100%;
+        padding:  0 47rpx 60rpx 47rpx;
+        image{
+            width: 35rpx;
+            height: 35rpx;
+            margin-right: 48rpx;
+        }
+        view{
+            font-size: 28rpx;
+            width: 112rpx;
+            text-align: justify;
+            height: 40rpx;
+        }
+        view::after{
+            content: '';
+            display: inline-block; 
+            padding-left: 100%;
+        }
+    }
+    .historyRecord{
+        height: 30rpx !important;
+    }
+    .bagRecord{
+        width: 40rpx !important;
+        height: 40rpx !important;
+        margin-right:42rpx !important;
+    }
+    .titleBox_{
+        width: 100%;
+        padding: 0 80rpx;
+        z-index:20;
+        height:400rpx;
+        position:absolute;
+        left:0;
+        right:0;
+        top: 0;
+        bottom: 0;
+        margin:auto;
+        top:-160%;
+        transition:top 0.3s;
+        .demandBox{
+            height:400rpx;
+            position:relative !important;
+            margin:normal;
+            transition:normal;
+            left:0;
+            .inputBox{
+                margin:50rpx 0;
+            }
+            button{
+                margin-top: 76rpx;
+            }
+        }
+    }
+    .demandBoxShow{
+        top: 0;
+    }
+</style>

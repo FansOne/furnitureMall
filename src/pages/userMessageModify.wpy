@@ -1,0 +1,213 @@
+<script>
+import wepy from 'wepy';
+import requestUrl from '../api/api'
+import { request,toast } from '../utils/request'
+
+export default class userMessageModify extends wepy.page {
+    config = {
+        navigationBarTitleText: '我的',
+    };
+    components = {};
+
+    data = {
+        index: 0,
+        array: [{label:'男',id:1},{label:'女',id:2}],
+        occupationInitialSelect:true,
+        // yearSelect:true,
+        // timeValue:'2016',
+        // currentYear:'',
+    };
+    methods = {
+        bindPickerChange(e) {
+            this.index = e.detail.value
+            this.occupationInitialSelect = false
+        },
+        // bindDateChange(e) {
+        //     this.timeValue = e.detail.value
+        //     this.yearSelect = false
+        //     this.showSelectCity = true;
+        // },
+        formSubmit(e){
+            console.log(e.detail.value)
+            let formValue = e.detail.value;
+            let msgComplete = false
+            Object.keys(formValue).forEach((key)=>{
+                if(formValue[key]){
+                    msgComplete = true
+                }else{
+                    msgComplete = false
+                    toast('请完善信息后提交')
+                }
+            })
+            if(msgComplete){
+                request(requestUrl.userOne,'PUT',{
+                    mobile:formValue.userPhone,
+                    nickName:formValue.petName,
+                    name:formValue.userName,
+                    id_card:formValue.idcard,
+                    gender:formValue.genderSelect == 0?'男':'女',
+                    address:formValue.userAddress
+                }).then(res=>{
+                    wx.hideLoading();
+                    if(res.data.status == 200){
+                        toast('已保存','success')
+                        setTimeout(() => {
+                            wx.navigateBack({
+                                delta: 1
+                            });
+                        }, 670);
+                    }else{
+                        toast(res.data.message || '请求服务器数据异常')
+                    }
+                })
+            }
+        }
+    };
+
+    events = {};
+    onLoad() {
+        // let date=new Date;
+        // let year=date.getFullYear(); 
+        // this.currentYear = year-1
+    };
+}
+</script>
+
+<template lang="wxml">
+    <view class="userMessageBox">
+        <view class="userIcon"><open-data type="userAvatarUrl"/></view>
+        <open-data type="userNickName" class='userNickName'/>
+    </view>
+    <view class="messText">个人信息</view>
+    <!-- 表单 -->
+    <form bindsubmit="formSubmit">
+        <view class="userInputBox">
+            <input placeholder="姓名" placeholder-style="font-size:28rpx;color:#979796" name='userName'/>
+            <input placeholder="昵称" placeholder-style="font-size:28rpx;color:#979796" name='petName'/>
+            <!-- 性别 -->
+            <view class="occupationSelectBox">
+                <picker @change="bindPickerChange" value="{{id}}" range="{{array}}" range-key="label" class="{{occupationInitialSelect?'occupationInitialSelect':''}}" name='genderSelect'>
+                    {{occupationInitialSelect?'性别':array[index].label}}
+                </picker>
+                <view class="bottomTriangle"></view>
+            </view>
+            <!-- 网址填写 -->
+            <!-- <input placeholder="填写网址" placeholder-style="font-size:28rpx;color:#979796" name='website'/> -->
+            <!-- 身份证号码 -->
+            <input placeholder="身份证号" type='idcard' placeholder-style="font-size:28rpx;color:#979796" name='idcard'/>
+            <!-- 商业描述 -->
+            <!-- <input placeholder="商业描述" placeholder-style="font-size:28rpx;color:#979796" name='businessDescribe'/> -->
+            <!-- 服务范围 -->
+            <!-- <input placeholder="服务范围" placeholder-style="font-size:28rpx;color:#979796" name='serviceRange'/> -->
+            <!-- 服务区域 -->
+            <!-- <input placeholder="服务区域" placeholder-style="font-size:28rpx;color:#979796" name='serviceRegion'/> -->
+            <!-- 工作年限 -->
+            <!-- <view class="workTitle">工作年限</view>
+            <view class="occupationSelectBox">
+                <picker @change="bindDateChange" mode="date" fields='year' value="{{timeValue}}" start='1949' end='{{currentYear}}' class="{{yearSelect?'occupationInitialSelect':''}}" name='workYear'>
+                    {{timeValue}}年 -- 至今
+                </picker>
+                <view class="bottomTriangle"></view>
+            </view> -->
+            <!-- 联系电话 -->
+            <input placeholder="联系电话" placeholder-style="font-size:28rpx;color:#979796" type='number' name='userPhone'/>
+            <!-- 服务范围 -->
+            <input placeholder="联系地址" placeholder-style="font-size:28rpx;color:#979796" name='userAddress'/>
+        </view>
+        <view class="btnBox">
+            <button form-type="submit">保存修改</button>
+        </view>
+    </form>
+</template>
+
+<style lang="less">
+    .userMessageBox{
+        height: 240rpx;
+        width: 100%;
+        background-image: url('https://wx-shopping-1257093177.cos.ap-beijing.myqcloud.com/my_bg%402x.png');
+        background-size: 100%;
+        background-repeat: no-repeat;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: space-around;
+        padding-top: 10rpx;
+        .userIcon{
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 150rpx;
+            height: 150rpx;
+            background-color: #fff;
+            open-data{
+                width: 147rpx;
+                height: 147rpx;
+            }
+        }
+        .userNickName{
+            color: #fff;
+            font-size: 30rpx;
+        }
+    }
+    .messText{
+        width: 100%;
+        padding: 40rpx 30rpx;
+        font-size: 30rpx;
+        color: #1d1a14;
+    }
+    .userInputBox{
+        width: 100%;
+        padding: 0rpx 30rpx 155rpx 30rpx;
+        input{
+            width: 100%;
+            border-bottom: 1rpx solid #eee;
+            margin-bottom: 50rpx;
+        }
+        .occupationSelectBox{
+            width: 100%;
+            margin-bottom: 50rpx;
+            border-bottom: 1rpx solid #eee;
+            padding-bottom: 5rpx;
+            display: flex;
+            justify-items: center;
+            justify-content: space-between;       
+            .bottomTriangle{
+                width: 0;
+                height: 0;
+                border-left: 17rpx solid transparent;
+                border-right: 17rpx solid transparent;
+                border-top: 19rpx solid #979796;
+                transform: translateY(15rpx);
+            }
+            picker{
+                flex: 1;
+            }
+        }
+        .workTitle{
+            font-size: 28rpx;
+            color: #666;
+            margin-bottom: 35rpx;
+        }
+    }
+    .occupationInitialSelect{
+        font-size:28rpx;
+        color:#979796;
+    }
+    .btnBox{
+        z-index: 9;
+        width: 100%;
+        padding: 25rpx 35rpx;
+        position: fixed;
+        bottom: 0;
+        border-top: 1rpx solid #f1f1f1;
+        background-color: #ffffff;
+        button{
+            width: 100%;
+            height: 88rpx;
+            padding: 0;
+            margin: 0;
+            background-color: #5d7baf;
+            color: #fff;
+        }
+    }
+</style>

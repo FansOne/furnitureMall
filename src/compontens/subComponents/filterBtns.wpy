@@ -1,0 +1,216 @@
+<template lang="wxml">
+    <view class="screenBox {{ selectScreen ? 'scrollX':''}}">
+        <scroll-view scroll-x>
+            <view class="comprehensiveBtn {{ selectclass ? 'selectScreen':''}} {{ selectScreen ? 'moveBottom':''}}" style="height:60rpx" @tap='screenClass'>
+                <icon class='iconfont icon-iconfonticon-shezhi'/>
+                <view>综合</view>
+            </view>
+            <block wx:if='{{selectScreen}}'>
+                <picker wx:for='{{caseClass}}' wx:key='' data-index='{{index}}' @change="bindPickerChange" @tap='bindClass' value="{{index}}" range="{{caseClass[index].children}}" range-key='label' class="comprehensiveBtn {{ item.selectScreen_ ? 'selectScreen':''}}">
+                    <view class="pickerView">{{item.label}}</view>
+                    <icon class='iconfont icon-jiantou9' style='margin-right:0rpx;margin-left:22rpx'/>
+                </picker>
+            </block>
+        </scroll-view>
+    </view>
+    <!-- 筛选项 -->
+    <view class="screenItemBox" style="{{ screenItem.length ?'padding: 12rpx 30rpx 0rpx 30rpx;':''}}">
+        <view wx:for='{{screenItem}}' wx:key='' class='screenItem' @tap='deleteClass({{index}})'>
+            <view>{{item.label}}</view>
+            <icon class='iconfont icon-close-b'/>
+        </view>
+    </view>
+    <view class="locationPrompt" wx:if='{{locationPrompt}}'><text style='font-size:28rpx;color:#f40'>*</text> '位置'为单项筛选条件，如需更换请删除当前所选位置</view>
+</template>
+
+<script>
+import wepy from 'wepy';
+export default class filterBtns extends wepy.component {
+    components = {};
+
+    data = {
+        screenItem:[],
+        pickerValue:[],
+        selectScreen:true, //按钮折叠开关
+        selectclass:true,
+        locationPrompt:false
+    };
+    methods = {
+        bindPickerChange(e) { //展示用户选择
+            let isNo = false;
+            let errOnly = '';
+            let errNum = 0;
+            let hash=[];
+            let caseClassDataIndex = e.currentTarget.dataset.index;
+            let userSelectLable = this.caseClass[caseClassDataIndex].children[e.detail.value];
+            userSelectLable.classIndex = caseClassDataIndex
+            if(this.screenItem.length == 0){
+                this.screenItem.push(userSelectLable)
+                this.$apply()
+            }else{
+                this.screenItem.forEach(element => {
+                    errOnly +=element.err
+                    if(element.id == userSelectLable.id){
+                        isNo = false;
+                    }else{
+                        isNo = true;
+                    }
+                });
+                errNum = errOnly.indexOf("only")  //仅限设计师列表位置唯一选择使用
+                if(isNo && errNum == -1 && userSelectLable.err == 'only'){
+                    this.locationPrompt = true
+                    this.screenItem.push(userSelectLable)
+                }else if(userSelectLable.err == undefined && isNo){
+                    this.screenItem.push(userSelectLable)
+                }
+            }
+            for (var i = 0; i < this.screenItem.length; i++) { //去重
+                if(hash.indexOf(this.screenItem[i])==-1){
+                    hash.push(this.screenItem[i]);
+                }
+            }
+            this.screenItem = hash
+            this.$apply()
+            this.$emit('userSelectClass', this.screenItem);
+        },
+        bindClass(){
+            // console.log(this.screenItem)
+        },
+        screenClass(){
+            if( !this.selectclass && !this.selectScreen){
+                this.selectclass = true
+            }else{
+                this.selectclass = false
+                this.screenItem = []
+                this.caseClass.forEach(element => {
+                    if(element.selectScreen_){
+                        element.selectScreen_ = false
+                    }
+                });
+            }
+            this.selectScreen = !this.selectScreen
+        },
+        // 删除多余筛选项
+        deleteClass(idx){
+            if(this.screenItem[idx].err) this.locationPrompt = false
+            // if(this.screenItem.length>1){
+                this.screenItem.splice(idx,1);
+                this.$emit('userSelectClass', this.screenItem);
+            // }else{
+            //     wx.showToast({
+            //         title: '至少预留一种筛选条件',
+            //         icon: 'none',
+            //         duration: 1500,
+            //         mask: false,
+            //     });
+            // }
+        }
+    };
+
+    events = {};
+
+    props = {
+        caseClass: {
+            type: Object,
+            default: 'null'
+        }
+    };
+}
+</script>
+
+<style lang="less">
+    .screenBox{
+        width: 40%;
+        padding: 12rpx 0rpx 20rpx 30rpx;
+        display: flex;
+        align-items: center;
+        scroll-view{
+            width: 100%;
+            white-space:nowrap;
+            .comprehensiveBtn{
+                height: 57rpx;
+                padding: 0 15rpx;
+                margin-right: 24rpx;
+                border-radius: 15rpx;
+                border: 1rpx solid #999;
+                display:inline-flex;
+                align-items: center;
+                justify-content: center;
+                transition: transform .6s;
+                icon{
+                    display: inline-block;
+                    transform: translateY(-9rpx);
+                    margin-right: 22rpx;
+                    font-size: 31rpx;
+                    color: #000;
+                }
+                view{
+                    height: 60rpx;
+                    line-height: 60rpx;
+                    display: inline-block;
+                }
+                .pickerView{
+                    height: 57rpx;
+                    line-height: 57rpx;
+                }
+                .icon-jiantou9{
+                    transform: translateY(2rpx);
+                    font-size: 35rpx;
+                }
+            }
+        }
+    }
+    .scrollX{
+        width: 100%;
+        transition: all .4s;
+    }
+    .moveBottom{
+        transform: translateY(6rpx);
+    }
+    .selectScreen{
+        border: 1rpx solid #6483b1 !important;
+        view,icon{
+            color: #6483b1 !important;
+        }
+    }
+    .screenItemBox{
+        width: 100%;
+        display: flex;
+        align-items: center;
+        flex-flow: wrap;
+        .screenItem{
+            height: 60rpx;
+            width: 205rpx;
+            padding: 0 10rpx;
+            border-radius: 50rpx;
+            margin-right: 20rpx;
+            background-color: #6483b1;
+            margin-bottom: 20rpx;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            icon{
+                color: #fff;
+                font-size: 40rpx;
+                line-height: 60rpx;
+            }
+            view{
+                flex: 1;
+                height: 60rpx;
+                padding-right:12rpx;
+                line-height: 60rpx;
+                text-align: right;
+                overflow: hidden;
+                text-overflow:ellipsis;
+                white-space: nowrap;
+                color: #fff;
+            }
+        }
+    }
+    .locationPrompt{
+        color: #888;
+        font-size: 24rpx;
+        width: 100%;
+        padding: 0 30rpx;
+    }
+</style>

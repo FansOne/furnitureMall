@@ -1,0 +1,876 @@
+<script>
+import wepy from 'wepy';
+import api from '../api/api'
+import { request,toast,weChatPay } from '../utils/request'
+
+export default class orderDetail extends wepy.page {
+    config = {
+        navigationBarTitleText: '订单详情',
+    };
+    components = {};
+
+    data = {
+        applyaffiliatedText:'',
+        direction:'',
+        orderId:'',
+        orderGoods:[],
+        status:'',
+        statusText:'',
+        statusImg:'',
+        goodsTotal:'',
+        requestDataBefore:false,
+        applyRefund:{
+            text:'退款',
+            style:'border:1rpx solid #989898;color:#6483b1'
+        },
+        nickname:'',
+        avatar:'',
+        isMerchant:'',
+        maskHidden:true,
+        maskDeliveryHidden:true,
+        merchantRefundHidden:true,
+        agreeRefund:true,
+    };
+    methods = {
+        // 申请退款
+        applyRefund_(id,orderGoods,total_price){
+            let item = JSON.stringify(orderGoods)
+            if(this.orderGoods.status == 4 || this.orderGoods.status == 5){
+                return
+            }else{
+                wx.navigateTo({
+                    url: `./applyRefund?id=${id}&direction=${this.direction}&item=${item}&affiliatedText=${this.applyaffiliatedText}&total_price=${total_price}`
+                });
+            }
+        },
+        callPhone(){
+            wx.makePhoneCall({
+                phoneNumber: this.orderGoods.shopMobile
+            })
+        },
+        // 联系买家
+        contactBuyers(phone){
+            wx.makePhoneCall({
+                phoneNumber: phone
+            })
+        },
+        // 订单支付
+        payMent(){
+            // secondary_payment
+            if(this.direction == 'shopping'){
+                // 聚购物订单支付
+                let url = `${api.secondary_payment}/${this.orderId}`
+                request(url).then(res=>{
+                    wx.hideLoading();
+                    // 发起微信支付
+                    weChatPay(res)
+                })
+            }else{
+                // 聚服务订单支付
+                request(`${api.work_orders}/${this.orderId}`).then(res=>{
+                    wx.hideLoading();
+                    // 发起微信支付
+                    weChatPay(res)
+                })
+            }
+        },
+        // 订单取消
+        cancelOrder(){
+            // 聚购物
+            let shopUrl = `${api.shop_cancel_order}/${this.orderId}`;
+            // 聚服务
+            let serviceUrl = `${ api.cancel_order }/${this.orderId}`;
+            request(this.direction == 'shopping'?shopUrl:serviceUrl).then(res=>{
+                wx.hideLoading();
+                toast('订单已取消','success')
+                setTimeout(() => {
+                    wx.reLaunch({
+                        url: './orderLists'
+                    });
+                }, 700);
+            })
+        },
+        // 用户取消退款
+        cancelRefund(){
+            wx.showModal({
+                title: '',
+                content: '撤销后XXX,且XXX(撤销退款说明)',
+                showCancel: true,
+                cancelText: '取消',
+                cancelColor: '#000000',
+                confirmText: '确定',
+                confirmColor: '#3CC51F',
+                success: (result) => {
+                    if(result.confirm){
+                        // 聚购物
+                        let shopUrl = `${api.cancel_refund}/${this.orderId}`;
+                        // 聚服务
+                        let serviceUrl = `${ api.work_cancel_refund }/${this.orderId}`;
+                        request(this.direction == 'shopping'?shopUrl:serviceUrl).then(res=>{
+                            wx.hideLoading();
+                            if(res.data.status == 200){
+                                toast('取消申请成功','success')
+                                this.requestDataBefore = true
+                                if(this.direction == 'service'){      // 获取服务订单详情
+                                    this.serverOrderDetails(this.orderId)
+                                }else{                                   // 获取商品订单详情
+                                    this.goodsOrderDetails(this.orderId)
+                                }
+                                this.$apply()
+                            }else{
+                                toast(res.data.message)
+                            }
+                        })
+                    }
+                }
+            });
+        },
+        // 订单评价
+        orderEvaluate(){
+            let cover = '';
+            if(this.direction == 'shopping'){
+                cover = this.orderGoods.order_details[0].icon
+            }else{
+                cover = this.orderGoods.cover
+            }
+            wx.navigateTo({
+                url: `./evaluate?m_id=${this.direction == 'shopping'?this.orderGoods.id:this.orderGoods.m_id}&cover=${cover}`
+            })
+        },
+        // 弹窗遮罩隐藏/显示
+        maskHidden(){
+            this.maskHidden = !this.maskHidden
+        },
+        maskDeliveryHidden(){
+            this.maskDeliveryHidden = !this.maskDeliveryHidden
+        },
+        merchantRefundHidden(){
+            this.merchantRefundHidden = !this.merchantRefundHidden
+        },
+        // 遮罩滑动穿透禁止
+        preventTouchMove(){},
+        // 商户修改价格
+        modifyPrice(e){
+            let currentPrice = e.detail.value.currentPrice;
+            request(`${this.direction=='shopping'?api.edit_price:api.edit_work_order_price}/${this.orderGoods.id}`,`${this.direction=='shopping'?'GET':'PUT'}`,{
+                price:currentPrice,
+            }).then(res=>{
+                wx.hideLoading();
+                if(res.data.status == 200){
+                    toast('已改价','success')
+                    this.maskHidden = true
+                    setTimeout(() => {
+                        if(this.direction == 'service'){      // 获取服务订单详情
+                            this.orderGoods = []
+                            this.serverOrderDetails(this.orderId)
+                        }else{                                   // 获取商品订单详情
+                            this.orderGoods = []
+                            this.goodsOrderDetails(this.orderId)
+                        }
+                    }, 600);
+                    this.$apply()
+                }else{
+                    toast(res.data.message || '请求服务器数据异常')
+                }
+            })
+        },
+        // 确认发货/服务
+        confirmDeliveryService(){
+            if(this.direction == 'shopping'){   //确认发货
+                this.maskDeliveryHidden = false
+            }else{                              //确认服务
+                wx.showModal({
+                    title: '服务提醒',
+                    content: '交易成功后，在买家验收无误后请要求买家当面点击"确认收货"按钮，以免钱财两失。',
+                    showCancel: true,
+                    cancelText: '取消',
+                    cancelColor: '#000000',
+                    confirmText: '继续',
+                    confirmColor: '#3CC51F',
+                    success: (result) => {
+                        if(result.confirm){
+                            
+                        }
+                    }
+                });
+            }
+        },
+        // 商家发货
+        deliveryGoods(e){
+            let phoneNumber = e.detail.value.phoneNumber;
+            request(`${api.merchant_delivery}/${this.orderGoods.id}`,'GET',{
+                mobile:phoneNumber,
+            }).then(res=>{
+                wx.hideLoading();
+                if(res.data.status == 200){
+                    toast('已发货','success')
+                    this.maskDeliveryHidden = true
+                    setTimeout(() => {
+                        if(this.direction == 'service'){      // 获取服务订单详情
+                            this.orderGoods = []
+                            this.serverOrderDetails(this.orderId)
+                        }else{                                   // 获取商品订单详情
+                            this.orderGoods = []
+                            this.goodsOrderDetails(this.orderId)
+                        }
+                    }, 600);
+                    this.$apply()
+                }else{
+                    toast(res.data.message || '请求服务器数据异常')
+                }
+            })
+        },
+        // 提醒买家验收
+        checkPrompt(){
+            
+        },
+        // 商户退款
+        merchantRefund(status){
+            this.merchantRefundHidden =false
+            if(status==2){  //拒绝退款
+                this.agreeRefund = false
+            }else if(status==1){          //同意退款
+                this.agreeRefund = true
+            }
+        },
+        // 商户处理退款
+        merchantRefundSubmit(e){
+            let refundValue = e.detail.value.refundValue;
+            let data = { flag:`${this.agreeRefund?'1':'2'}` };
+            if(this.agreeRefund){
+                data.refund_fee = refundValue
+            }else{
+                data.msg = refundValue
+            }
+            if(refundValue){
+                request(`${this.direction == 'shopping'?api.merchantGoodsRefund:api.merchantServiceRefund}/${this.orderGoods.id}`,`${this.direction == 'shopping'?'PUT':'GET'}`,data).then(res=>{
+                    wx.hideLoading();
+                    if(res.data.status==200){
+                        toast('已处理','success')
+                        this.merchantRefundHidden = true
+                        setTimeout(() => {
+                            if(this.direction == 'service'){      // 获取服务订单详情
+                                this.orderGoods = []
+                                this.serverOrderDetails(this.orderId)
+                            }else{                                   // 获取商品订单详情
+                                this.orderGoods = []
+                                this.goodsOrderDetails(this.orderId)
+                            }
+                        }, 600);
+                        this.$apply()
+                    }else{
+                        toast(res.data.message || '请求服务器数据错误')
+                    }
+                })
+            }else{
+                toast('提交内容不能为空')
+            }
+        },
+        // 删除订单
+        deleteOrder(){
+            // orders
+            request(`${this.direction=='shopping'?api.orders:api.work_orders}/${this.orderId}`,'DELETE',{isMerchant:this.isMerchant==1?2:1}).then(res=>{
+                wx.hideLoading();
+                if(res.data.status == 200){
+                    toast('已删除','success')
+                    setTimeout(() => {
+                        wx.navigateBack({
+                            delta: 1
+                        });
+                    }, 600);
+                }else{
+                    toast(res.data.message || '请求服务器数据错误')
+                }
+            })
+        }
+    };
+    events = {};
+    onLoad(options) {
+        // console.log(options)
+        this.isMerchant = options.isMerchant
+        this.applyaffiliatedText = options.applyaffiliatedText
+        this.direction = options.direction
+        this.orderId = options.orderId
+        this.nickname = options.nickname
+        this.avatar = options.avatar
+        if(options.direction == 'service'){      // 获取服务订单详情
+            this.serverOrderDetails(options.orderId)
+        }else{                                   // 获取商品订单详情
+            this.goodsOrderDetails(options.orderId)
+        }
+    };
+    // 获取服务订单详情
+    serverOrderDetails(orderId){
+        let url = `${api.work_order_details}/${orderId}`;
+        request(url).then(res=>{
+            //0未支付 1已支付 2已发货 3已完成 4待退款 5已退款 6已取消 
+            wx.hideLoading();
+            if(res.data.message.status == 4){
+                if(this.isMerchant == '1'){
+                    this.applyRefund.text = '买家申请退款'
+                }else{
+                    this.applyRefund.text = '申请中'
+                }
+                this.applyRefund.style = 'color:#fff;background-color:#6483b1;border:1rpx solid #6483b1'
+            }else if(res.data.message.status == 5){
+                this.applyRefund.text = '已退款'
+                this.applyRefund.style = 'color:#fff;background-color:#d9d9d9;border:1rpx solid #d9d9d9'
+            }
+            this.orderGoods = res.data.message
+            res.data.message.total_price = Number(res.data.message.total_price/100).toFixed(2)
+            this.orderStatus(res.data.message.status)
+            this.$apply()
+        })
+    }
+    // 获取商品订单详情
+    goodsOrderDetails(orderId){
+        let goodsTotal = 0;
+        let url = `${api.orders}/${orderId}`
+        request(url).then(res=>{
+            //0未支付 1已支付 2已发货 3已完成 4待退款 5已退款 6已取消
+            wx.hideLoading();
+            if(res.data.message.status == 4){
+                if(this.isMerchant == '1'){
+                    this.applyRefund.text = '买家申请退款'
+                }else{
+                    this.applyRefund.text = '申请中'
+                }
+                this.applyRefund.style = 'color:#fff;background-color:#6483b1;border:1rpx solid #6483b1'
+            }else if(res.data.message.status == 5){
+                this.applyRefund.text = '已退款'
+                this.applyRefund.style = 'color:#fff;background-color:#d9d9d9;border:1rpx solid #d9d9d9'
+            }
+            res.data.message.order_details.forEach(element => {
+                element.price = Number(element.price/100).toFixed(2)     
+                goodsTotal += element.price * element.num
+            });
+            res.data.message.total_price = Number(res.data.message.total_price/100).toFixed(2)
+            res.data.message.freight = Number(res.data.message.freight/100).toFixed(2)
+            this.orderGoods = res.data.message
+            this.goodsTotal = goodsTotal.toFixed(2)
+            this.orderStatus(res.data.message.status)
+            this.$apply()
+        })
+    }
+    // 订单status
+    orderStatus(status){
+        if(status == 0){
+            this.status = '待付款'
+            if(this.isMerchant=='1'){
+                this.statusText = '等待买家付款/买家已取消支付'
+            }else{
+                this.statusText = '待支付订单/已取消付款'
+            }
+            this.statusImg = '../images/ing_icon@2x.png'
+        }else if(status == 1){
+            this.status = '待发货'
+            if(this.isMerchant=='1'){
+                this.statusText = '已支付成功，等待发货'
+            }else{
+                this.statusText = '支付成功，待发货'
+            }
+            this.statusImg = '../images/paySuccess@2x.png'
+        }else if(status == 2){
+            this.status = '派送中'
+            if(this.isMerchant=='1'){
+                this.statusText = '已向买家发货，等待买家收货确认'
+            }else{
+                this.statusText = '您的宝贝离您越来越近了'
+            }
+            this.statusImg = '../images/bg_icon@2x.png'
+        }else if(status == 3){
+            this.status = '已完成'
+            if(this.isMerchant=='1'){
+                this.statusText = '钱款已打入您的账号中'
+            }else{
+                this.statusText = '对宝贝或服务还满意吗？给个好评吧！'
+            }
+            this.statusImg = '../images/done_icon@2x.png'
+        }else if(status == 4){
+            this.status = '待退款'
+            if(this.isMerchant=='1'){
+                this.statusText = '买家发起退款申请，请尽快处理'
+            }else{
+                this.statusText = '退款申请将在三个工作日内完成'
+            }
+            this.statusImg = '../images/ing_icon@2x.png'
+        }else if(status == 5){
+            if(this.isMerchant == '1'){
+                this.statusText='已同意买家申请三个工作日内到达买家账户'
+            }else{
+                this.statusText = '退款成功'
+            }
+            this.status = '已退款'
+            this.statusImg = '../images/success_icon@2x.png'
+        }else if (status == 6){
+            this.status = '已取消'
+            this.statusText = '该笔订单已取消'
+            this.statusImg = '../images/fail_icon@2x.png'
+        }
+        this.requestDataBefore = true
+        this.$apply()
+    }
+}
+</script>
+
+<template lang="wxml">
+    <!-- 订单状态&用户地址&订单商品 -->
+    <view class="statusAddressGoodsBox">
+        <!-- 订单状态 -->
+        <view class="statusBox">
+            <view class="statusTextBox">
+                <view>{{status}}</view>
+                <view>{{statusText}}</view>
+            </view>
+            <image src="{{statusImg}}" />
+        </view>
+        <!-- 收货地址 -->
+        <view class="addressBox">
+            <view class="userName"><view>{{orderGoods.username}}</view><view>{{orderGoods.phone}}</view></view>
+            <view class="userAddress">
+                <image src="../images/map_icon@2x.png" />
+                <view>{{orderGoods.address}}</view>
+            </view>
+        </view>
+        <!-- 商品订单商品 -->
+        <view class="orderGoodsBox" wx:if="{{direction == 'shopping'}}">
+            <view class="shopTitleBox">
+                <block wx:if="{{isMerchant==''}}">
+                    <image src='../images/house_icon@2x.png' />
+                    <view>{{orderGoods.shopName}}</view>
+                </block>
+                <block wx:else>
+                    <image src='{{avatar}}' style='width:45rpx;height:45rpx;border-radius:50%;'/>
+                    <view>{{nickname}}</view>
+                </block>
+            </view>
+            <view class="goodsBox" wx:for='{{orderGoods.order_details}}' wx:key='' wx:for-index="idx" wx:for-item="itemName">
+                <image src="{{itemName.icon}}" />
+                <view class="goodSkus">
+                    <view class="goodTitle_num">
+                        <view>{{itemName.shopName}}</view>
+                        <view class="skus">{{itemName.skuName}}</view>
+                        <view>数量：×{{itemName.num}}</view>
+                    </view>
+                    <view class="goodPrice">￥{{itemName.price}}</view>
+                </view>
+            </view>
+            <!-- 申请退款 -->
+            <!-- //0未支付 1已支付 2已发货 3已完成 4待退款 5已退款 6已取消  -->
+            <view class="applyRefund" wx:if="{{(orderGoods.status != 0 && orderGoods.status != 6) || isMerchant=='1'}}">
+                <block wx:if="{{isMerchant=='1'}}">
+                    <view style="border:1rpx solid #989898;color:#6483b1" @tap='contactBuyers({{orderGoods.phone}})'>联系买家</view>
+                    <view wx:if="{{orderGoods.status == 5}}" style="{{applyRefund.style}};margin-left:15rpx">{{applyRefund.text}}</view>
+                </block>
+                <block wx:else>
+                    <view wx:if="{{orderGoods.status != 0 && orderGoods.status != 6}}" style="{{applyRefund.style}}" @tap="applyRefund_({{orderGoods.id}},{{orderGoods.order_details}},{{orderGoods.total_price}})">{{applyRefund.text}}</view>
+                </block>
+            </view>
+        </view>
+        <!-- 服务订单商品 -->
+        <view class="orderGoodsBox" wx:if="{{direction == 'service'}}">
+            <view class="shopTitleBox">
+                <image src='../images/house_icon@2x.png' />
+                <view>{{orderGoods.shopName}}</view>
+            </view>
+            <view class="goodsBox">
+                <image src="{{orderGoods.cover}}" />
+                <view class="goodSkus">
+                    <view class="goodTitle_num">
+                        <view>{{orderGoods.title}}</view>
+                        <view>数量：×1</view>
+                    </view>
+                    <view class="goodPrice">￥{{orderGoods.total_price}}</view>
+                </view>
+            </view>
+            <!-- 申请退款 -->
+            <!-- //0未支付 1已支付 2已发货 3已完成 4待退款 5已退款 6已取消  -->
+            <view class="applyRefund" wx:if="{{(orderGoods.status != 0 && orderGoods.status != 6) || isMerchant=='1'}}">
+                <block wx:if="{{isMerchant=='1'}}">
+                    <view style="border:1rpx solid #989898;color:#6483b1" @tap='contactBuyers({{orderGoods.phone}})'>联系买家</view>
+                    <view wx:if="{{orderGoods.status == 5}}" style="{{applyRefund.style}};margin-left:15rpx">{{applyRefund.text}}</view>
+                </block>
+                <block wx:else>
+                    <view wx:if="{{orderGoods.status != 0 && orderGoods.status != 6}}" style="{{applyRefund.style}}" @tap="applyRefund_({{orderGoods.id}},{{orderGoods}},{{orderGoods.total_price}})">{{applyRefund.text}}</view>
+                </block>
+            </view>
+        </view>
+    </view>
+    <!-- 订单编号等信息 -->
+    <view class="orderMessBox">
+        <view class="orderMess">
+            <view>订单编号</view>
+            <view>{{direction == 'shopping'?orderGoods.order_number:orderGoods.pay_order_number}}</view>
+        </view>
+        <view class="orderMess">
+            <view>下单时间</view>
+            <view>{{direction == 'shopping'?orderGoods.created_at:orderGoods.updated_at}}</view>
+        </view>
+        <!-- <view class="orderMess">
+            <view>配送快递</view>
+            <view>顺丰速递</view>
+        </view>
+        <view class="orderMess">
+            <view>发票信息</view>
+            <view>无</view>
+        </view> -->
+    </view>
+    <view class="shadowLine"/>
+    <!-- 商品运费及总额 -->
+    <view class="orderMessBox">
+        <view class="orderMess">
+            <view>商品总额</view>
+            <view>￥{{direction == 'shopping'?goodsTotal:orderGoods.total_price}}</view>
+        </view>
+        <view class="orderMess" wx:if="{{direction == 'shopping'}}">
+            <view>运费</view>
+            <view>￥{{orderGoods.freight}}</view>
+        </view>
+        <view class="orderMess">
+            <view>共计</view>
+            <view class="goodsTotal">￥{{orderGoods.total_price}}</view>
+        </view>
+    </view>
+    <view class="shadowLine"/>
+    <view class="bottomBox">
+        <!-- //0未支付 1已支付 2已发货 3已完成 4待退款 5已退款 6已取消  -->
+        <block wx:if='{{orderGoods.status == 0}}'>
+            <block wx:if='{{isMerchant != 1}}'>
+                <button class="firstBtn" @tap ='cancelOrder'>取消订单</button>
+                <button class="lastBtn" @tap="payMent">立即支付</button>
+            </block>
+            <block wx:else>
+                <button class="lastBtn" @tap='maskHidden'>修改价格</button>
+            </block>
+        </block>
+        <block wx:elif='{{orderGoods.status == 1}}'>
+            <block wx:if="{{isMerchant=='1'}}">
+                <button class="lastBtn" @tap='confirmDeliveryService'>{{direction=='shopping'?'确认发货':'确认服务'}}</button>
+            </block>
+            <block wx:else>
+                <button class="firstBtn" @tap ='callPhone'>联系商家</button>
+                <button class="lastBtn">提醒发货</button>
+            </block>
+        </block>
+        <block wx:elif='{{orderGoods.status == 2}}'>
+            <block wx:if="{{isMerchant=='1'}}">
+                <button class="lastBtn" @tap="checkPrompt">提醒买家验收</button>
+            </block>
+            <block wx:else>
+                <button class="firstBtn" @tap ='callPhone'>联系商家</button>
+                <button class="lastBtn">确认收货</button>
+            </block>
+        </block>
+        <block wx:elif='{{orderGoods.status == 3}}'>
+            <block wx:if="{{isMerchant=='1'}}">
+                <button class="lastBtn" @tap='orderEvaluate'>去评价</button>
+            </block>
+            <block wx:else>
+                <button class="firstBtn" @tap ='callPhone'>联系商家</button>
+                <button class="lastBtn" @tap='orderEvaluate'>去评价</button>
+            </block>
+        </block>
+        <block wx:elif='{{orderGoods.status == 4}}'>
+            <block wx:if="{{isMerchant=='1'}}">
+                <button class="firstBtn" @tap ='merchantRefund(2)'>拒绝退款</button>
+                <button class="lastBtn" @tap="merchantRefund(1)">同意退款</button>
+            </block>
+            <block wx:else>
+                <button class="firstBtn" @tap ='callPhone'>联系商家</button>
+                <button class="lastBtn" @tap="cancelRefund">撤销申请</button>
+            </block>
+        </block>
+        <block wx:elif='{{orderGoods.status == 5}}'>
+            <block wx:if="{{isMerchant=='1'}}">
+                <button class="lastBtn" @tap='deleteOrder'>删除订单</button>
+            </block>
+            <block wx:else>
+                <button class="firstBtn" @tap ='callPhone'>联系商家</button>
+                <button class="lastBtn">再来一单</button>
+            </block>
+        </block>
+        <block wx:elif='{{orderGoods.status == 6}}'>
+            <button class="lastBtn" @tap='deleteOrder'>删除订单</button>
+        </block>
+    </view>
+    <!-- 修改价格弹窗 -->
+    <form @submit="modifyPrice" class="modifyPriceBox {{maskHidden?'':'modifyPriceBoxShow'}}">
+        <view class="modify"><text>*</text> 商品改价 <text>*</text></view>
+        <input placeholder="请输入该笔订单总价" placeholder-style="font-size:28rpx;" name='currentPrice' type='digit' maxlength="7"/>
+        <view class="modifyPrompt">* 此操作为修改该笔订单总价,而非商品单价</view>
+        <button form-type="submit">确定</button>
+    </form>
+    <!-- 确认发货弹窗 -->
+    <form @submit="deliveryGoods" class="modifyPriceBox {{maskDeliveryHidden?'':'modifyPriceBoxShow'}}">
+        <view class="modify"><text>*</text> 订单商品发货 <text>*</text></view>
+        <input placeholder="请输入送货员电话" placeholder-style="font-size:28rpx;" name='phoneNumber' type='number' maxlength="11"/>
+        <view class="modifyPrompt">* 确认发货后请尽快将商品派送给客户</view>
+        <button form-type="submit">确定</button>
+    </form>
+    <!-- 退款弹窗 -->
+    <form @submit="merchantRefundSubmit" class="modifyPriceBox {{merchantRefundHidden?'':'modifyPriceBoxShow'}}">
+        <view class="modify"><text>*</text> 处理退款申请 <text>*</text></view>
+        <input placeholder="{{agreeRefund?'请输入退款金额':'请输入拒绝退款理由'}}" placeholder-style="font-size:28rpx;" name='refundValue' type="{{agreeRefund?'number':'text'}}"/>
+        <view class="modifyPrompt">* {{agreeRefund?'同意买家退款申请后，货款将直接打入对方账户中':'拒绝买家退款须充分说明拒绝申请理由'}}</view>
+        <button form-type="submit">确定</button>
+    </form>
+    <!-- 弹窗遮罩 -->
+    <view class="masks" hidden='{{maskHidden}}' @tap='maskHidden' catchtouchmove="preventTouchMove"></view>
+    <view class="masks" hidden='{{maskDeliveryHidden}}' @tap='maskDeliveryHidden' catchtouchmove="preventTouchMove"></view>
+    <view class="masks" hidden='{{merchantRefundHidden}}' @tap='merchantRefundHidden' catchtouchmove="preventTouchMove"></view>
+    <!-- TODO数据渲染前遮罩 -->
+    <view class="requestDataBefore" hidden='{{requestDataBefore}}'></view>
+</template>
+
+<style lang="less">
+    page{
+        border-top: 1rpx solid rgb(231, 231, 231);
+        padding-bottom: 120rpx;
+    }
+    .statusAddressGoodsBox{
+        width: 100%;
+        padding: 15rpx 15rpx 0rpx 15rpx;
+        .statusBox{
+            width: 100%;
+            background-color: #6080b5;
+            height: 120rpx;
+            border-radius: 10rpx;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20rpx 50rpx 10rpx 35rpx;
+            .statusTextBox{
+                view:first-of-type{
+                    font-size: 36rpx;
+                    color: #ffffff;
+                    font-weight: bold;
+                }
+                view:last-of-type{
+                    font-size: 28rpx;
+                    color: #ffffff;
+                }
+            }
+            image{
+                width: 62rpx;
+                height: 60rpx;
+            }
+        }
+        .addressBox{
+            min-height: 120rpx;
+            width: 100%;
+            border-radius: 10rpx;
+            box-shadow: 0 0 13rpx rgb(226, 225, 225);
+            padding: 20rpx 35rpx;
+            margin-top: 30rpx;
+            margin-bottom: 25rpx;
+            .userName{
+                display: flex;
+                justify-content: space-between;
+                padding-bottom: 15rpx;
+                view{
+                    font-size: 26rpx;
+                    color: #231815;
+                }
+            }
+            .userAddress{
+                display: flex;
+                align-items: center;
+                image{
+                    width: 25rpx;
+                    height: 30rpx;
+                }
+                view{
+                    flex: 1;
+                    font-size: 26rpx;
+                    display: -webkit-box;
+                    -webkit-box-orient: vertical;
+                    -webkit-line-clamp: 2;
+                    overflow: hidden;
+                    padding-left: 15rpx;
+                }
+            }
+        }
+        .orderGoodsBox{
+            width: 100%;
+            box-shadow: 0 5rpx 13rpx rgb(226, 225, 225);
+            padding-top: 45rpx;
+            padding-bottom: 40rpx;
+            border-radius: 0 0 10rpx 10rpx;
+            .shopTitleBox{
+                width: 100%;
+                display: flex;
+                align-items: center;
+                padding: 0 35rpx 15rpx 35rpx;
+                border-bottom: 1rpx solid #eceaea;
+                image{
+                    width: 35rpx;
+                    height: 30rpx;
+                }
+                view{
+                    font-size: 26rpx;
+                    padding-left: 15rpx;
+                }
+            }
+            .goodsBox{
+                width: 100%;
+                padding: 30rpx 35rpx 0rpx 35rpx;
+                display: flex;
+                align-items: center;
+                image{
+                    width: 140rpx;
+                    height: 140rpx;
+                    border: 1rpx solid #eee;
+                }
+                .goodSkus{
+                    width: 100%;
+                    padding-left: 25rpx;
+                    flex: 1;
+                    display: flex;
+                    align-items: flex-start;
+                    .goodTitle_num{
+                        flex: .8;
+                        padding-right: 8rpx;
+                        view:first-of-type{
+                            font-size: 26rpx;
+                            width: 100%;
+                            display: -webkit-box;
+                            -webkit-box-orient: vertical;
+                            -webkit-line-clamp: 2;
+                            overflow: hidden;
+                        }
+                        .skus{
+                            font-size: 24rpx;
+                            color: #666;
+                            padding-top: 18rpx;
+                        }
+                        view:last-of-type{
+                            font-size: 22rpx;
+                            color: #666;
+                            padding-top: 18rpx;
+                        }
+                    }
+                    .goodPrice{
+                        text-align: right;
+                        flex: .2;
+                        color: #6483b1;
+                        font-size: 33rpx;
+                        transform: translateY(-4rpx);
+                    }
+                }
+            }
+            .applyRefund{
+                width: 100%;
+                display: flex;
+                justify-content: flex-end;
+                padding: 0 30rpx;
+                view{
+                    width: 160rpx;
+                    height: 60rpx;
+                    line-height: 60rpx;
+                    text-align: center;
+                    font-size: 32rpx;
+                    border-radius: 10rpx;
+                    letter-spacing: 3rpx;
+                }
+            }
+        }
+    }
+    .orderMessBox{
+        width: 100%;
+        padding: 40rpx 30rpx 0rpx 30rpx;
+        .orderMess{
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 25rpx;
+            view{
+                font-size: 26rpx;
+            }
+            .goodsTotal{
+                color: #6483b1;
+            }
+        }
+    }
+    .bottomBox{
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        background-color: #ffffff;
+        height: 120rpx;
+        padding: 20rpx 35rpx;
+        display: flex;
+        justify-content: flex-end;
+        border-top: 1rpx solid #f1f1f1;
+        .firstBtn,.lastBtn{
+            width: 200rpx;
+            height: 80rpx;
+            border: 1rpx solid #6483b1;
+            line-height: 80rpx;
+            font-size: 30rpx;
+            text-align: center;
+        }
+        .firstBtn{
+            background-color: #fff;
+            color: #6483b1;
+        }
+        .lastBtn{
+            background-color: #6483b1;
+            color: #fff;
+            margin-left: 50rpx;
+        }
+    }
+    .modifyPriceBox{
+        z-index: 20;
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        margin: auto;
+        width: 0%;
+        height: 400rpx;
+        overflow: hidden;
+        background-color: #fff;
+        transition: width .3s;
+        border-radius: 15rpx;
+        .modify{
+            width: 100%;
+            text-align: center;
+            font-size: 35rpx;
+            font-weight: bold;
+            padding: 30rpx 0 40rpx 0;
+            text{
+                color: red;
+            }
+        }
+        input{
+            width: 80%;
+            height: 90rpx;
+            background-color: #eee;
+            margin: auto;
+            padding-left: 25rpx;
+            border-radius: 10rpx;
+        }
+        .modifyPrompt{
+            width: 83%;
+            color: #999;
+            margin: auto;
+            font-size: 24rpx;
+            margin-top: 10rpx;
+        }
+        button{
+            width: 60%;
+            height: 80rpx;
+            line-height: 80rpx;
+            letter-spacing: 3rpx;
+            margin: auto;
+            background-color: #6483b1;
+            font-size: 30rpx;
+            color: #fff;
+            margin-top: 40rpx;
+        }
+    }
+    .modifyPriceBoxShow{
+        width: 90% !important;
+    }
+</style>

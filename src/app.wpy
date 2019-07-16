@@ -1,0 +1,107 @@
+<style>
+@import "./style/iconfont";
+@import "./style/publicStyle";
+button::after{
+  border: none;
+}
+view{
+  box-sizing: border-box;
+  font-size: 30rpx;
+  color: #333;
+}
+button{
+  padding: 0;
+  margin: 0;
+}
+</style>
+
+<script>
+import wepy from 'wepy'
+import loggin from './utils/login'
+import 'wepy-async-function'
+
+
+export default class extends wepy.app {
+  config = {
+    pages: [
+      'pages/index',
+      'pages/camera',
+      'pages/DIY',
+      'pages/goodLists',
+      'pages/mine',
+      'pages/shoppingCard',
+      'pages/goodDetails',
+      'pages/userMessageModify',
+      'pages/experienceDetailsFirst',
+      'pages/caseDetails',
+      'pages/caseSwiperDetails',
+      'pages/mineStyleCustomization',
+      'pages/orderLists',
+      'pages/orderDetail',
+      'pages/myLike',
+      'pages/dataAudit',
+      'pages/design',
+      'pages/evaluate',
+      'pages/applyRefund',
+      'pages/releaseGoods',
+      'pages/myRelease',
+      'pages/designLists',
+      'pages/historyBrowsing',
+      'pages/canvasTouchPen',
+      'pages/serviceDetails',
+      'pages/saveIdeaBook',
+      'pages/businessReviews',
+      'pages/payMentSuccess',
+      'pages/productSearch',
+      'pages/merchantGoodsList',
+      'pages/merchantCasesList',
+      'pages/merchantServicesList'
+    ],
+    window: {
+      backgroundTextStyle: 'light',
+      navigationBarBackgroundColor: '#fff',
+      navigationBarTitleText: '家聚',
+      navigationBarTextStyle: 'black'
+    },
+    permission: {
+      "scope.userLocation": {
+        "desc": "你的位置信息将用于小程序位置展示"
+      }
+    },
+    networkTimeout: {
+      "request": 8000
+    }
+  }
+
+  globalData = {}
+
+  constructor () {
+    super()
+    this.use('requestfix')
+    this.use('promisify');
+  }
+
+  onLaunch() {
+    // 初始化数据库
+    // wx.cloud.init({
+    //     env: 'citydata-8805d5',
+    //     traceUser :true
+    // })
+    // 登录获取token
+    loggin.loggin().then(res=>{
+      wx.setStorageSync('token', res.data.message.access_token);
+      wx.setStorageSync('designMsg', { isMerchant:res.data.message.isMerchant,designShopId:res.data.message.shopId })
+    })
+    // 窗口高度
+    wx.getSystemInfo({
+        success:(res)=> {
+            wepy.$instance.globalData.windowHeight = res.windowHeight
+        }
+    })
+  }
+  signIn(){
+    // 新用户首次登录获取token
+    return loggin.loggin()
+  }
+}
+</script>

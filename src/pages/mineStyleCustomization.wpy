@@ -1,0 +1,43 @@
+<script>
+import wepy from 'wepy';
+
+export default class mineStyleCustomization extends wepy.page {
+    config = {
+        navigationBarTitleText: '你喜欢的风格？',
+    };
+    components = {};
+
+    data = {};
+    methods = {};
+
+    events = {};
+    onLoad() {};
+    // Other properties
+}
+</script>
+
+<template lang="wxml">
+    <view class="questionnairePromptBox">
+        <view class="questionnairePrompt">
+            填写3份或以上的问卷，开启属于自己的风格订制
+        </view>
+    </view>
+</template>
+
+<style lang="less">
+    page{
+        border-top: 1rpx solid rgb(211, 211, 211);
+    }
+    .questionnairePromptBox{
+        width: 100%;
+        padding: 45rpx 70rpx;
+        .questionnairePrompt{
+            font-size: 24rpx;
+            width: 100%;
+            text-align: center;
+            padding-bottom: 55rpx;
+            border-bottom: 1rpx solid #e2e1e1;
+            color: #333332;
+        }
+    }
+</style>

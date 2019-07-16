@@ -1,0 +1,379 @@
+<script>
+import wepy from 'wepy';
+import api from '../api/api'
+import { request,toast } from '../utils/request'
+
+export default class design extends wepy.page {
+    config = {
+        navigationBarTitleText: '',
+        backgroundColor: "#eeeeee"
+    };
+    components = {};
+
+    data = {
+        userInfo:null,
+        stars: [0, 1, 2, 3, 4],
+        normalSrc: 'https://img.zhizubaba.com/jBjH445aq0u0QbmvX1qITvCEOsjtYcynGcgHRVQ8.png',
+        selectedSrc: 'https://img.zhizubaba.com/YAH2TyGehe8AA0dRBLOqkuLMTavWBCxAqpMiuyIH.png',
+        caseData:[
+            {
+                cover:'../images/home_free_bg.png',
+                num:'30',
+                title:'一个充满灵感的大'
+            },
+            {
+                cover:'../images/home_find_bg.png',
+                num:'26',
+                title:'一个充满灵感的大床超温暖'
+            },
+            {
+                cover:'../images/home_free_bg.png',
+                num:'15',
+                title:'一个充满灵感的大床超温暖一个充满灵感的大床超温暖一个充满灵感的大床超温暖一个充满灵感的大床超温暖'
+            }
+        ],
+        recommend:[
+            {
+                image:'../images/spfl1.png',
+                title: '美式简约单人现代休闲硬板凳',
+                brand:'NIKE',
+                price: 499,
+                originalPrice:699,
+                score:5
+            },
+            {
+                image:'../images/spfl1.png',
+                title: '美式简约单人现代休闲硬板凳',
+                brand:'NIKE',
+                price: 499,
+                originalPrice:699,
+                score:5
+            }
+        ],
+        allData:{},
+    };
+    methods = {
+        releaseGoods(){
+            wx.navigateTo({
+                url: `./releaseGoods?m_id=${this.userInfo.id}`
+            })
+        },
+        moreSever(){
+            // 此处需判断是商户还是用户 我的发布/发布列表
+            if(this.userInfo.isMerchant==1){
+                wx.navigateTo({
+                    url: `./myRelease`
+                })
+            }else if(this.userInfo.isMerchant==0){
+                wx.navigateTo({
+                    url: `./merchantServicesList?m_id=${this.userInfo.id}`
+                });
+            }
+        },
+        // 服务详情
+        severDetails(id){
+            if(this.userInfo.isMerchant==0){
+                wx.navigateTo({
+                    url: `./serviceDetails?id=${id}`
+                });
+            }else if (this.userInfo.isMerchant==1){
+                wx.navigateTo({
+                    url: `./myRelease`
+                })
+            }
+        },
+        // 案例详情
+        clckScreenImg(item_){
+            let item = JSON.stringify(item_)
+            wx.navigateTo({
+                url: `./caseDetails?item=${item}`
+            })
+        },
+        // 商品详情
+        goodDetail(cover,id){
+            wx.navigateTo({
+                url: `./goodDetails?goodsId=${id}&cover=${cover}`
+            });
+        },
+        // 聚购物列表（更多）
+        merchantGoodsList(){
+            wx.navigateTo({
+                url: `./merchantGoodsList?m_id=${this.userInfo.id}`
+            });
+        },
+        // 聚案例(更多)
+        merchantCasesList(){
+            wx.navigateTo({
+                url: `./merchantCasesList?m_id=${this.userInfo.id}`
+            });
+        },
+        orderLists(){
+            wx.navigateTo({
+                url: './orderLists?isMerchant=1'
+            });
+        }
+    };
+
+    events = {};
+    onLoad(options) {
+        this.userInfo = options
+        // 请求商户中心数据
+        request(`${api.dataAudit}/${options.id}`).then(res=>{
+            wx.hideLoading();
+            if(res.data.status == 200){
+                res.data.message.goods.forEach(element => {
+                    element.price = Number(element.price/100).toFixed(2)
+                    element.market = Number(element.market/100).toFixed(2)
+                });
+                if(res.data.message.works) res.data.message.works.price = Number(res.data.message.works.price/100).toFixed(2)
+                this.allData = res.data.message
+                this.$apply()
+                wx.setNavigationBarTitle({title: `设计师--${options.nickname?options.nickname:this.allData.title}`})
+            }else{
+                toast(res.data.message || '请求服务器数据异常')
+            }
+        })
+    };
+}
+</script>
+
+<template lang="wxml">
+    <view class="userBox" style="background-image: url('{{allData.icon}}')">
+        <view class="masks"></view>
+        <cover-image src="{{allData.icon}}" class="userIcon" />
+        <view class="userRightBox">
+            <view class="userName">{{allData.title}}</view>
+            <view class="fans">{{allData.collect}}关注<text>|</text>0粉丝</view>
+            <view class="star-wrap">
+                <view class="star">
+                    <view class = 'startBox'>
+                        <block wx:for="{{stars}}" wx:key='idx' wx:for-item='itemStar'>
+                            <image class="star-image" style="left: {{itemStar*30}}rpx;" src="{{allData.score > itemStar ?selectedSrc : normalSrc}}">
+                                <view class="item" style="left:0rpx" data-key="{{itemStar+0.5}}"></view>
+                                <view class="item" style="left:25rpx" data-key="{{itemStar+1}}"></view>
+                            </image>
+                        </block>
+                    </view>
+                </view>
+                <view style="font-size:26rpx;transform: translateY(-4rpx)">({{allData.score}})</view>
+            </view>
+            <view class="myOrder" @tap="orderLists" wx:if='{{userInfo.isMerchant == 1}}'>我的订单<view class="orderNum">{{allData.new}}</view></view>
+        </view>
+    </view>
+    <!-- 我的案例 -->
+    <view class="CaseTitle" wx:if='{{allData.photos.length}}' @tap='merchantCasesList'>
+        <view>{{userInfo.isMerchant == 1?'我的案例':'聚案例'}}</view>
+        <view>更多 ></view>
+    </view>
+    <scroll-view scroll-x class="scrollX" wx:if='{{allData.photos.length}}'>
+        <view class="caseItemBox" wx:for='{{allData.photos}}' wx:key='' @tap='clckScreenImg({{item}})'>
+            <image src="{{item.cover}}"><view>含{{item.num}}款商品</view></image>
+            <view class="caseGoodTitle">{{item.roomName}}</view>
+        </view>
+    </scroll-view>
+    <view class="shadowLine"></view>
+    <!-- 聚购物 -->
+    <view class="CaseTitle" style="background-color:#fff" wx:if='{{allData.goods.length}}' @tap='merchantGoodsList'>
+        <view>聚购物</view>
+        <view>更多 ></view>
+    </view>
+    <view class="goodsCategoryBox" style="padding:0rpx 15rpx;background-color:#fff;" wx:if='{{allData.goods.length}}'>
+        <view class="goodsCategoryItem activeBox recommend" wx:for='{{allData.goods}}' wx:key='' style="background-color:#fff;" @tap='goodDetail({{item.cover}},{{item.id}})'>
+            <image src='{{item.cover}}'/>
+            <view class="activePriceBox">
+                <view class="title">{{item.name}}</view>
+                <view class="brand">{{item.affiliated_name}}</view>
+                <view class="sell"><text>￥{{item.price}}</text><text class="throughLine">￥{{item.market}}</text></view>
+                <!-- <view>******(5)</view> -->
+                <view class="star-wrap">
+                    <view class="star">
+                        <view class = 'startBox'>
+                            <block wx:for="{{stars}}" wx:key='idx' wx:for-item='itemStar'>
+                                <image class="star-image" style="left: {{itemStar*30}}rpx;" src="{{item.customer_rating > itemStar ?selectedSrc : normalSrc}}">
+                                    <view class="item" style="left:0rpx" data-key="{{itemStar+0.5}}"></view>
+                                    <view class="item" style="left:25rpx" data-key="{{itemStar+1}}"></view>
+                                </image>
+                            </block>
+                        </view>
+                    </view>
+                </view>
+            </view>
+            <image class="hostSellIcon" src="../images/jgw_rm.png"/>
+        </view>
+    </view>
+    <view class="shadowLine"></view>
+    <view class="releaseBtn" wx:if='{{userInfo.isMerchant == 1}}'><button @tap="releaseGoods">发布商品</button></view>
+    <!-- 我发布的服务 -->
+    <view class="CaseTitle" style="background-color:#fff" @tap='moreSever' wx:if='{{allData.works}}'>
+        <view>{{userInfo.isMerchant == 1?'我发布的服务':'聚服务'}}</view>
+        <view>更多 ></view>
+    </view>
+    <view class="releaseSeverceBox" style="background-color:#fff" @tap='severDetails({{allData.works.id}})' wx:if='{{allData.works}}'>
+        <image src="{{allData.works.cover}}" />
+        <view class="releaseSeverceR">
+            <view>
+                <view class="releaseSeverceTitle">{{allData.works.title}}</view>
+                <view class="affiliated_name">{{allData.works.text}}</view>
+            </view>
+            <view class="severcePrice">
+                <view>￥{{allData.works.price}}</view>
+                <view>{{allData.works.cateName}}</view>
+            </view>
+        </view>
+    </view>
+</template>
+
+<style lang="less">
+    page{
+        padding-bottom: 140rpx;
+        background-color: #eee;
+    }
+    .userBox{
+        position: relative;
+        width: 100%;
+        height: 285rpx;
+        background-size: 100%;
+        display: flex;
+        align-items: center;
+        padding-left: 25rpx;
+        .masks{
+            background-color: rgba(0, 0, 0, .8);
+        }
+        .userIcon{
+            z-index: 999;
+            width: 140rpx;
+            height: 140rpx;
+            border-radius: 50%;
+        }
+        .userRightBox{
+            flex: 1;
+            height: 140rpx;
+            padding-top: 15rpx;
+            padding-bottom: 10rpx;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            padding-left: 20rpx;
+            z-index: 11;
+            view{
+                color: #ffffff;
+            }
+            .userName{
+                font-size: 34rpx;
+            }
+            .fans{
+                color: #fff;
+                font-size: 26rpx;
+                text{
+                    display: inline-block;
+                    padding: 0 10rpx;
+                }
+            }
+            .myOrder{
+                position: absolute;
+                right: 0;
+                top: 0;
+                color: #f40;
+                background-color: #fff;
+                border-radius: 15rpx 0 0 15rpx;
+                height: 120%;
+                width: 40rpx;
+                font-size: 26rpx;
+                text-align: center;
+                margin: 0 auto;
+                padding: 10rpx 6rpx;
+                .orderNum{
+                    position: absolute;
+                    left: -20rpx;
+                    top: -12rpx;
+                    width: 35rpx;
+                    height: 35rpx;
+                    text-align: center;
+                    line-height: 35rpx;
+                    border-radius: 50%;
+                    color: #fff;
+                    background-color: #f40;
+                    font-size: 24rpx;
+                }
+            }
+        }
+    }
+    .CaseTitle{
+        background-color: #f1f1f1;
+        height: 90rpx;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        padding: 0 22rpx;
+        justify-content: space-between;
+        view:first-of-type{
+            font-size: 33rpx;
+            font-weight: bold;
+        }
+        view:last-child{
+            font-size: 28rpx;
+            color: #6483b1;
+        }
+    }
+    .scrollX{
+        padding-left: 15rpx;
+        height: 444rpx;
+        box-sizing: border-box;
+        width: 100%;
+        white-space:nowrap;
+        .caseItemBox{
+            width: 389rpx;
+            height: 412rpx;
+            display:inline-block;
+            background-color: #ffffff;
+            border-radius: 15rpx;
+            box-shadow: 0 0 15rpx rgb(209, 209, 209);
+            margin: 10rpx 15rpx;
+            image{
+                width: 389rpx;
+                height: 312rpx;
+                border-radius: 15rpx 15rpx 0 0;
+                position: relative;
+                view{
+                    position: absolute;
+                    bottom: 0;
+                    left: 0;
+                    width: 100%;
+                    color: #fff;
+                    padding-left: 20rpx;
+                    padding-bottom: 10rpx;
+                }
+            }
+            .caseGoodTitle{ 
+                height: 100rpx;
+                width: 389rpx;
+                padding: 0 25rpx;
+                display: -webkit-box;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                word-break: break-all;
+                -webkit-box-orient: vertical;
+                -webkit-line-clamp:2;
+            }
+        }
+    }
+    .releaseBtn{
+        width: 100%;
+        padding: 30rpx 0;
+        display: flex;
+        justify-content: center;
+        position: fixed;
+        bottom: 0;
+        background-color: #ffffff;
+        box-shadow: 0 -8rpx 15rpx rgb(218, 218, 218);
+        button{
+            height: 80rpx;
+            width: 670rpx;
+            background-color: #6483b1;
+            color: #fff;
+            font-size: 34rpx;
+            letter-spacing: 5rpx;
+        }
+    }
+</style>

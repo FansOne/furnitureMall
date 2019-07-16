@@ -1,0 +1,147 @@
+<template lang="wxml">
+    <view wx:for='{{syncTitle}}' wx:key='' class='userCommentShow_item' wx:for-item="item">
+        <view class='top'>
+            <image src='{{item.avatar}}' class='userCommentShow_itemIcon'/>
+            <view class='title'>{{item.nickname}}</view>
+            <!-- 星 -->
+            <view class='commentSpec'>
+                <block wx:for="{{syncStar}}" wx:key='idx' wx:for-item="items">
+                    <image class="star-image" style="width:20rpx;height:20rpx;margin-right:4rpx;" src="{{5 > items ?'https://wx-shopping-1257093177.cos.ap-beijing.myqcloud.com/%E6%98%9F%E6%98%9F1.png' : 'https://wx-shopping-1257093177.cos.ap-beijing.myqcloud.com/%E6%98%9F%E6%98%9F.png'}}"/>
+                </block>
+            </view>
+        </view>
+        <view class='time'>{{item.created_at}}</view>
+        <view class='contant'>{{item.contents}}</view>
+        <view class="zan"><view class="zanItem" @tap='zanSelect({{item.id}})'><image src="{{item.zanSelect?'../images/zanSelect.png':'../images/zan.png'}}" /><view>{{item.zan}}</view></view></view>
+        <!-- <scroll-view scroll-x style='height:235rpx;' class='userImg' wx:if='{{item.pics.length}}'>
+            <view class='userImg_' wx:for='{{item.pics}}' wx:key='' wx:for-item="itemName" wx:for-index="idx" @tap='previewImage({{item}},{{idx}})'>
+                <image src='{{itemName}}'/>
+            </view>
+        </scroll-view> -->
+    </view>
+</template>
+
+<script>
+import wepy from 'wepy';
+import requestUrl from '../api/api'
+import { request,toast } from '../utils/request'
+
+export default class businessReviews extends wepy.component {
+    components = {};
+    data = {
+        stars: [0, 1, 2, 3, 4],
+    };
+    methods = {
+        previewImage(e,idx){
+            wx.previewImage({
+                current: e.pics[idx], 
+                urls: e.pics
+            })
+        },
+        // 点赞
+        zanSelect(id){
+            this.syncTitle.forEach(element => {
+                if(element.id == id){
+                    // 点赞api
+                    request(`${requestUrl.forumReview}/${id}`).then(res=>{
+                        wx.hideLoading();
+                        if(res.data.status == 200){
+                            element.zanSelect = true
+                            element.zan++
+                            this.$apply()
+
+                        }else{
+                            toast(res.data.message)
+                        }
+                    })
+                }
+            });
+        }
+    };
+    props = {
+        syncTitle: {
+            type: Array,
+            default: 'null'
+        },
+        syncStar:{
+            type: Array,
+            default: 'null'
+        }
+    };
+    onLoad(){
+    }
+}
+</script>
+
+<style lang="less">
+    page{
+        background-color: #fcf6f6;
+    }
+    .userCommentShow_item{
+        background-color: #fff;
+        box-sizing: border-box;
+        padding: 30rpx;
+        margin-bottom: 25rpx;
+    }
+    .top{
+        display: flex;
+        align-items: center;
+        image{
+            width: 75rpx;
+            height: 75rpx;
+            border-radius: 50%;
+        }
+        .title{
+            font-size: 30rpx;
+            margin: 0 25rpx 0 15rpx;
+        }
+        .commentSpec{
+            line-height: 75rpx;
+        }
+    }
+    .time{
+        padding-left: 5rpx;
+        margin-top: 20rpx;
+        font-size: 18rpx;
+        color: #666;
+    }
+    .contant{
+        font-size: 27rpx;
+        margin: 20rpx 0;
+    }
+    .userImg{
+        width: 100%;
+        white-space: nowrap;
+        .userImg_{
+            display: inline-block;
+            width: 49%;
+            height: 235rpx;
+            image{
+                width: 97%;
+                height: 235rpx;
+            }
+        }
+    }
+    .zan{
+        width: 100%;
+        display: flex;
+        justify-content: flex-end;
+        .zanItem{
+            border-radius: 20rpx;
+            border: 1rpx solid rgb(219, 219, 219);
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            width: 88rpx;
+            padding: 6rpx 4rpx;
+            view{
+                font-size: 20rpx;
+                color:#666;
+            }
+            image{
+                width: 25rpx;
+                height: 25rpx;
+            }
+        }
+    }
+</style>
